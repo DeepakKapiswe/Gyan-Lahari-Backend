@@ -23,11 +23,17 @@ dependencies:
 - base >= 4.7 && < 5
 - servant
 - servant-server
+- servant-client
 - transformers
 - aeson
 - wai
 - wai-cors
 - warp
+- resource-pool
+- postgresql-simple
+- bytestring
+- http-client
+- http-types
 
 library:
   source-dirs: src
