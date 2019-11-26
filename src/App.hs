@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module App where
 
@@ -9,66 +10,44 @@ import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
 import           Network.Wai.Handler.Warp
-import           Network.Wai.Middleware.Cors
+import           Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import           Network.HTTP.ReverseProxy
 import           Servant
 import           System.IO
 
--- * api
+import           Network.Wai.Middleware.Cors
 
-type ItemApi =
-  "item" :> Get '[JSON] Item :<|>
-  "item" :> Capture "itemId" Integer :> Get '[JSON] Item :<|>
-  "item" :> "add" :> ReqBody '[JSON] Item :> Post '[JSON] Int
+import           Adapter.HTTP.Api
+import           Adapter.HTTP.Server
+import           Adapter.HTTP.ProxyServer
+import           Adapter.HTTP.PostgreSQL.UserData
 
-itemApi :: Proxy ItemApi
-itemApi = Proxy
 
--- * app
+import Data.Pool
+import Database.PostgreSQL.Simple
 
 run :: IO ()
 run = do
   let port = 7000
-      settings =
-        setPort port $
+  let connStr = ""
+  pool <- initConnectionPool connStr
+  initDB connStr
+  let settings = setPort port $
         setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) $
         defaultSettings
-  runSettings settings =<< mkApp
+  manager <- newManager defaultManagerSettings
+  runSettings settings $ mkApp manager pool
+    
+mkApp :: Manager -> Pool Connection -> Application
+mkApp manager conns = cors (const . Just $ corsPolicy) $
+  (serve api $ (server conns) :<|> forwardServer manager)
+  where
 
-mkApp :: IO Application
-mkApp = return . simpleCors $ serve itemApi server
-
-server :: Server ItemApi
-server =
-  getItems :<|>
-  getItemById :<|>
-  postItem
-
-getItems :: Handler Item
-getItems = return exampleItem
-
-getItemById :: Integer -> Handler Item
-getItemById = \ case
-  0 -> return exampleItem
-  _ -> throwError err404
-
-postItem :: Item -> Handler Int
-postItem _ = return 1000
-
-exampleItem :: Item
-exampleItem = Item 0 "example item"
-
--- * item
-
-data Item
-  = Item {
-    itemId :: Integer,
-    itemText :: String
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON Item
-instance FromJSON Item
-
-data a + b = Foo a b
-
-type X = Int + Bool
+    -- Need to explictly allow needed extra headers through CORS.
+    corsPolicy = simpleCorsResourcePolicy
+      { corsRequestHeaders = [ "content-type" ]
+      }
+    
+-- runApp :: Pool Connection -> IO ()
+-- runApp conns = do
+--   run 7000 $ app manager conns
