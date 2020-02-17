@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DeriveGeneric #-}
+
 
 module Adapter.HTTP.ProxyServer where
 
@@ -9,7 +9,7 @@ module Adapter.HTTP.ProxyServer where
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.HTTP.ReverseProxy
-import           Network.HTTP.Client (Manager)
+import Network.HTTP.Client (Manager)
 import Servant.Server (ServerT, Tagged )
 import Servant
 

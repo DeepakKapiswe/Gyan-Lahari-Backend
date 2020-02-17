@@ -9,6 +9,7 @@ import Servant
 import Data.Aeson
 import GHC.Generics
 
+import Types
 
 newtype Message = MkMessage { m :: String }
   deriving (Show, Eq, Generic )
@@ -18,8 +19,8 @@ instance ToJSON Message
 
 type API =
   "addUser"
-    :> ReqBody '[JSON] Message
-    :> Post '[JSON] Message -- NoContent
+    :> ReqBody '[JSON] CustAddress
+    :> Post '[JSON] String
   :<|> 
     Get '[JSON] [Message]
   :<|>
