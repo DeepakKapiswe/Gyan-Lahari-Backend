@@ -1,9 +1,11 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 
 module Types where
     
 import Data.Aeson
-import GHC.Generics
+import Database.PostgreSQL.Simple (FromRow)
+import GHC.Generics (Generic)
 
 data CustAddress = CustAddress {
     custSaluation :: String
@@ -18,7 +20,7 @@ data CustAddress = CustAddress {
   , custState     :: String
   , custPincode   :: String
   , custPhone     :: String
-} deriving (Show, Eq, Generic)
+} deriving (Show, Eq, Generic, FromRow)
 
 
 instance FromJSON CustAddress

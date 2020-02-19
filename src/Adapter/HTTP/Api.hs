@@ -22,7 +22,7 @@ type API =
     :> ReqBody '[JSON] CustAddress
     :> Post '[JSON] String
   :<|> 
-    Get '[JSON] [Message]
+    Get '[JSON] [CustAddress]
   :<|>
     "user" :> Get '[JSON] String
 

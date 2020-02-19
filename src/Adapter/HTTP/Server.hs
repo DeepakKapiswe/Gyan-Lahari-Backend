@@ -39,26 +39,39 @@ server conns =
                      \ custState,     \
                      \ custPincode,   \
                      \ custPhone) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-                    [ custSaluation cAdd
-                    , custFname  cAdd
-                    , custMname  cAdd
-                    , custLname  cAdd
-                    , custAbout  cAdd
-                    , custAdd1   cAdd
-                    , custAdd2   cAdd
-                    , custPost   cAdd
-                    , custCity   cAdd
-                    , custState  cAdd
-                    , custPincode cAdd
-                    , custPhone  cAdd ]
+        [ custSaluation cAdd
+        , custFname  cAdd
+        , custMname  cAdd
+        , custLname  cAdd
+        , custAbout  cAdd
+        , custAdd1   cAdd
+        , custAdd2   cAdd
+        , custPost   cAdd
+        , custCity   cAdd
+        , custState  cAdd
+        , custPincode cAdd
+        , custPhone  cAdd ]
       return "Data Tried to add on Database"
-            
-    getMessages :: Handler [Message]
-    getMessages = fmap (map (MkMessage .fromOnly)) . liftIO $
+                     
+    getMessages :: Handler [CustAddress]
+    getMessages = liftIO $ 
       withResource conns $ \conn ->
-      query_ conn "SELECT custFname FROM input_dynamic_customerDetails" :: IO [Only String]
-            
+        query_ conn "SELECT  \
+          \ custSaluation, \
+          \ custFname,     \
+          \ custMname,     \
+          \ custLname,     \
+          \ custAbout,     \
+          \ custAdd1,      \
+          \ custAdd2,      \
+          \ custPost,      \
+          \ custCity,      \
+          \ custState,     \
+          \ custPincode,   \
+          \ custPhone FROM input_dynamic_customerDetails"
+        
     somedata :: Handler String
     somedata = return "Jai Guru Maa from new API"
-      
-
+                         
+                         
+                       
