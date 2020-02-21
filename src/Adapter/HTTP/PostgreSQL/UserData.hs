@@ -17,10 +17,6 @@ type DBConnectionString = ByteString
 
 initDB :: DBConnectionString -> IO ()
 initDB connstr = 
-  -- bracket (connectPostgreSQL connstr) close $ \conn -> do
-  -- script <-  BS.readFile "postgresDb/GyanLahriDb.sql"
-  -- execute_ conn (Query script) 
-    -- "CREATE TABLE IF NOT EXISTS messages (msg text not null)"
   return ()
 
 

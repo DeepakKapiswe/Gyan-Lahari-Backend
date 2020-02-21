@@ -11,18 +11,12 @@ import GHC.Generics
 
 import Types
 
-newtype Message = MkMessage { m :: String }
-  deriving (Show, Eq, Generic )
-
-instance FromJSON Message
-instance ToJSON Message
-
 type API =
   "addUser"
-    :> ReqBody '[JSON] CustAddress
+    :> ReqBody '[JSON] Subscriber
     :> Post '[JSON] String
   :<|> 
-    Get '[JSON] [CustAddress]
+    Get '[JSON] [Subscriber]
   :<|>
     "user" :> Get '[JSON] String
 

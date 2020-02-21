@@ -22,53 +22,66 @@ server conns =
   getMessages :<|> 
   somedata     
   where
-    postMessage :: CustAddress -> Handler String
-    postMessage cAdd = do
+    postMessage :: Subscriber -> Handler String
+    postMessage subscriber = do
       liftIO . withResource conns $ \conn ->
         execute conn
-                    "INSERT INTO input_dynamic_customerDetails(    \    
-                     \ custSaluation, \
-                     \ custFname,     \
-                     \ custMname,     \
-                     \ custLname,     \
-                     \ custAbout,     \
-                     \ custAdd1,      \
-                     \ custAdd2,      \
-                     \ custPost,      \
-                     \ custCity,      \
-                     \ custState,     \
-                     \ custPincode,   \
-                     \ custPhone) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-        [ custSaluation cAdd
-        , custFname  cAdd
-        , custMname  cAdd
-        , custLname  cAdd
-        , custAbout  cAdd
-        , custAdd1   cAdd
-        , custAdd2   cAdd
-        , custPost   cAdd
-        , custCity   cAdd
-        , custState  cAdd
-        , custPincode cAdd
-        , custPhone  cAdd ]
+                    "INSERT INTO input_dynamic_subscribers(    \    
+                     \ subStartVol, \
+                     \ subSubscriptionType, \
+                     \ subSlipNum, \
+                     \ subSaluation, \
+                     \ subFname,     \
+                     \ subMname,     \
+                     \ subLname,     \
+                     \ subAbout,     \
+                     \ subAdd1,      \
+                     \ subAdd2,      \
+                     \ subPost,      \
+                     \ subCity,      \
+                     \ subState,     \
+                     \ subPincode,   \
+                     \ subPhone,     \
+                     \ subRemark     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        [ subStartVol subscriber
+        , subSubscriptionType subscriber
+        , subSlipNum subscriber
+        , subSaluation subscriber
+        , subFname   subscriber
+        , subMname   subscriber
+        , subLname   subscriber
+        , subAbout   subscriber
+        , subAdd1    subscriber
+        , subAdd2    subscriber
+        , subPost    subscriber
+        , subCity    subscriber
+        , subState   subscriber
+        , subPincode subscriber
+        , subPhone   subscriber
+        , subRemark  subscriber]
       return "Data Tried to add on Database"
                      
-    getMessages :: Handler [CustAddress]
+    getMessages :: Handler [Subscriber]
     getMessages = liftIO $ 
       withResource conns $ \conn ->
         query_ conn "SELECT  \
-          \ custSaluation, \
-          \ custFname,     \
-          \ custMname,     \
-          \ custLname,     \
-          \ custAbout,     \
-          \ custAdd1,      \
-          \ custAdd2,      \
-          \ custPost,      \
-          \ custCity,      \
-          \ custState,     \
-          \ custPincode,   \
-          \ custPhone FROM input_dynamic_customerDetails"
+          \ subStartVol, \
+          \ subSubscriptionType, \
+          \ subSlipNum,   \
+          \ subSaluation, \
+          \ subFname,     \
+          \ subMname,     \
+          \ subLname,     \
+          \ subAbout,     \
+          \ subAdd1,      \
+          \ subAdd2,      \
+          \ subPost,      \
+          \ subCity,      \
+          \ subState,     \
+          \ subPincode,   \
+          \ subPhone,     \
+          \ subRemark    \
+          \ FROM input_dynamic_subscribers"
         
     somedata :: Handler String
     somedata = return "Jai Guru Maa from new API"
