@@ -26,14 +26,11 @@ server conns =
     postMessage subscriber = do
       liftIO . withResource conns $ \conn ->
         execute conn
-                    "INSERT INTO input_dynamic_subscribers(    \    
+                    "INSERT INTO input_dynamic_subscribers( \    
                      \ subStartVol, \
                      \ subSubscriptionType, \
                      \ subSlipNum, \
-                     \ subSaluation, \
-                     \ subFname,     \
-                     \ subMname,     \
-                     \ subLname,     \
+                     \ subName,      \
                      \ subAbout,     \
                      \ subAdd1,      \
                      \ subAdd2,      \
@@ -42,14 +39,12 @@ server conns =
                      \ subState,     \
                      \ subPincode,   \
                      \ subPhone,     \
-                     \ subRemark     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                     \ subRemark,    \
+                     \ subDistId     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         [ subStartVol subscriber
         , subSubscriptionType subscriber
         , subSlipNum subscriber
-        , subSaluation subscriber
-        , subFname   subscriber
-        , subMname   subscriber
-        , subLname   subscriber
+        , subName    subscriber
         , subAbout   subscriber
         , subAdd1    subscriber
         , subAdd2    subscriber
@@ -58,7 +53,8 @@ server conns =
         , subState   subscriber
         , subPincode subscriber
         , subPhone   subscriber
-        , subRemark  subscriber]
+        , subRemark  subscriber
+        , subDistId  subscriber ]
       return "Data Tried to add on Database"
                      
     getMessages :: Handler [Subscriber]
@@ -68,10 +64,7 @@ server conns =
           \ subStartVol, \
           \ subSubscriptionType, \
           \ subSlipNum,   \
-          \ subSaluation, \
-          \ subFname,     \
-          \ subMname,     \
-          \ subLname,     \
+          \ subName,      \
           \ subAbout,     \
           \ subAdd1,      \
           \ subAdd2,      \
@@ -80,7 +73,8 @@ server conns =
           \ subState,     \
           \ subPincode,   \
           \ subPhone,     \
-          \ subRemark    \
+          \ subRemark,    \
+          \ subDistId     \
           \ FROM input_dynamic_subscribers"
         
     somedata :: Handler String

@@ -11,10 +11,7 @@ data Subscriber = Subscriber {
     subStartVol  :: Maybe String
   , subSubscriptionType  :: Maybe String
   , subSlipNum   :: Maybe String
-  , subSaluation :: Maybe String
-  , subFname     :: Maybe String
-  , subMname     :: Maybe String
-  , subLname     :: Maybe String
+  , subName      :: Maybe String
   , subAbout     :: Maybe String
   , subAdd1      :: Maybe String
   , subAdd2      :: Maybe String
@@ -24,6 +21,7 @@ data Subscriber = Subscriber {
   , subPincode   :: Maybe String
   , subPhone     :: Maybe String
   , subRemark    :: Maybe String
+  , subDistId    :: Maybe String
 } deriving (Show, Eq, Generic, FromRow)
 
 
