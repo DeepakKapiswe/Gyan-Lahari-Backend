@@ -27,3 +27,14 @@ data Subscriber = Subscriber {
 
 instance FromJSON Subscriber
 instance ToJSON Subscriber
+
+data Distributor = Distributor {
+    distId    :: Maybe String
+  , distName  :: Maybe String
+  , distAdd   :: Maybe String
+  , distCity  :: Maybe String
+  , distPhone :: Maybe String
+} deriving (Show, Eq, Generic, FromRow)
+
+instance FromJSON Distributor
+instance ToJSON Distributor

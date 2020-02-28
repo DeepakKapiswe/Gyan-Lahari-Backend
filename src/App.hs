@@ -46,6 +46,3 @@ mkApp manager conns = cors (const . Just $ corsPolicy) $
       { corsRequestHeaders = [ "content-type" ]
       }
     
--- runApp :: Pool Connection -> IO ()
--- runApp conns = do
---   run 7000 $ app manager conns

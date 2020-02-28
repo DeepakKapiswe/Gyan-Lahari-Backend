@@ -17,8 +17,13 @@ type API =
     :> Post '[JSON] String
   :<|> 
     Get '[JSON] [Subscriber]
+  :<|> 
+    "addDistributor"
+      :> ReqBody '[JSON] Distributor
+      :> Post '[JSON] String
   :<|>
-    "user" :> Get '[JSON] String
+    "getAllDistributor"
+      :> Get '[JSON] [Distributor]
 
 api :: Proxy (API :<|> Raw)
 api = Proxy

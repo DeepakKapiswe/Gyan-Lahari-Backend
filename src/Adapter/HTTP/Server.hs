@@ -18,12 +18,13 @@ import Types
 
 server :: Pool Connection -> Server API
 server conns =
-  postMessage :<|> 
-  getMessages :<|> 
-  somedata     
+  postSubscriber :<|> 
+  getAllSubscriber :<|> 
+  postDistributor :<|>     
+  getAllDistributor    
   where
-    postMessage :: Subscriber -> Handler String
-    postMessage subscriber = do
+    postSubscriber :: Subscriber -> Handler String
+    postSubscriber subscriber = do
       liftIO . withResource conns $ \conn ->
         execute conn
                     "INSERT INTO input_dynamic_subscribers( \    
@@ -57,8 +58,8 @@ server conns =
         , subDistId  subscriber ]
       return "Data Tried to add on Database"
                      
-    getMessages :: Handler [Subscriber]
-    getMessages = liftIO $ 
+    getAllSubscriber :: Handler [Subscriber]
+    getAllSubscriber = liftIO $ 
       withResource conns $ \conn ->
         query_ conn "SELECT  \
           \ subStartVol, \
@@ -76,9 +77,38 @@ server conns =
           \ subRemark,    \
           \ subDistId     \
           \ FROM input_dynamic_subscribers"
+    
+    postDistributor :: Distributor -> Handler String
+    postDistributor distributor = do
+      liftIO . withResource conns $ \conn ->
+        execute conn
+                    "INSERT INTO input_static_distributors( \    
+                     \ distId,    \
+                     \ distName,  \
+                     \ distAdd,   \
+                     \ distCity,  \
+                     \ distPhone  \
+                     \ ) VALUES (?,?,?,?,?)"
+        [ distId distributor
+        , distName distributor
+        , distAdd distributor
+        , distCity distributor
+        , distPhone distributor ]
+      return "Data Tried to add on Database"
+
+    getAllDistributor :: Handler [Distributor]
+    getAllDistributor = liftIO $
+      withResource conns $ \conn ->
+        query_ conn "SELECT  \
+          \ distId,    \
+          \ distName,  \
+          \ distAdd,   \
+          \ distCity,  \
+          \ distPhone  \
+          \ FROM input_static_distributors"
+
+
         
-    somedata :: Handler String
-    somedata = return "Jai Guru Maa from new API"
                          
                          
                        
