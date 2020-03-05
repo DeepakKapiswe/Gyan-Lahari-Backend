@@ -12,9 +12,9 @@ import GHC.Generics
 import Types
 
 type API =
-  "addUser"
-    :> ReqBody '[JSON] Subscriber
-    :> Post '[JSON] String
+    "addUser"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] String
   :<|> 
     Get '[JSON] [Subscriber]
   :<|> 
@@ -24,6 +24,10 @@ type API =
   :<|>
     "getAllDistributor"
       :> Get '[JSON] [Distributor]
+  :<|>
+    "searchSubscriber"
+      :> ReqBody '[JSON] SearchQuery
+      :> Post '[JSON] [Subscriber]
 
 api :: Proxy (API :<|> Raw)
 api = Proxy

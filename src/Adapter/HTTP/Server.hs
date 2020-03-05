@@ -21,7 +21,8 @@ server conns =
   postSubscriber :<|> 
   getAllSubscriber :<|> 
   postDistributor :<|>     
-  getAllDistributor    
+  getAllDistributor :<|>
+  searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
     postSubscriber subscriber = do
@@ -76,7 +77,7 @@ server conns =
           \ subPhone,     \
           \ subRemark,    \
           \ subDistId     \
-          \ FROM input_dynamic_subscribers"
+          \ FROM input_dynamic_subscribers LIMIT 200"
     
     postDistributor :: Distributor -> Handler String
     postDistributor distributor = do
@@ -107,8 +108,54 @@ server conns =
           \ distPhone  \
           \ FROM input_static_distributors"
 
+    searchSubscriber :: SearchQuery -> Handler [Subscriber]
+    searchSubscriber sq = liftIO $
+      withResource conns $ \conn ->
+        query conn
+          "with \
+          \  _name as (SELECT ?), \
+          \  _fname as (SELECT split_part((select * from _name), ' ', 1)), \
+          \  _res1 as ( \
+          \    SELECT \
+          \     subStartVol, \
+          \     subSubscriptionType, \
+          \     subSlipNum,   \
+          \     subName,      \
+          \     subAbout,     \
+          \     subAdd1,      \
+          \     subAdd2,      \
+          \     subPost,      \
+          \     subCity,      \
+          \     subState,     \
+          \     subPincode,   \
+          \     subPhone,     \
+          \     subRemark,    \
+          \     subDistId     \
+          \    FROM input_dynamic_subscribers \
+          \    ORDER BY \
+          \      levenshtein_less_equal(subname,(select * from _name), 1,0,1,7) asc \
+          \    LIMIT 1000 \
+          \    ), \
+          \  _res2 as (  \
+          \    SELECT * from _res1 \
+          \      ORDER BY  \
+          \        metaphone((select * from _name),25) <<-> (metaphone(_res1.subName,25)) ASC \
+          \  ), \
+          \  _res3 as (  \
+          \    SELECT * from _res2 \
+          \      ORDER BY  \
+          \        (select * from _fname) <<-> _res2.subname ASC \
+          \  ), \
+          \  _res4 as (  \
+          \    SELECT * from _res3 \
+          \      ORDER BY  \
+          \        (select min(levenshtein_less_equal(name,(select * from _fname),2,1,1,7)) from unnest(string_to_array(_res3.subname, ' ')) as name), \
+          \         levenshtein_less_equal(_res3.subname,(select * from _name), 1,0,1,7) asc \
+          \       LIMIT ? ) \
+          \  SELECT * from _res4"
+        (sqSubName sq, sqLimit sq)
 
         
                          
                          
-                       
+              

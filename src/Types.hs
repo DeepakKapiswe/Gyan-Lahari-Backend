@@ -4,7 +4,7 @@
 module Types where
     
 import Data.Aeson
-import Database.PostgreSQL.Simple (FromRow)
+import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 
 data Subscriber = Subscriber {
@@ -38,3 +38,13 @@ data Distributor = Distributor {
 
 instance FromJSON Distributor
 instance ToJSON Distributor
+
+data SearchQuery = SearchQuery {
+    sqDistId  :: String
+  , sqSubName :: String
+  , sqQuery   :: String
+  , sqLimit   :: String
+} deriving (Show, Eq, Generic, FromRow, ToRow)
+
+instance FromJSON SearchQuery
+instance ToJSON SearchQuery
