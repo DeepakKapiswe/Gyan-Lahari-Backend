@@ -40,9 +40,9 @@ instance FromJSON Distributor
 instance ToJSON Distributor
 
 data SearchQuery = SearchQuery {
-    sqDistId  :: String
-  , sqSubName :: String
-  , sqQuery   :: String
+    -- sqDistId  :: String
+   sqSubName :: String
+  -- , sqQuery   :: String
   , sqLimit   :: String
 } deriving (Show, Eq, Generic, FromRow, ToRow)
 
