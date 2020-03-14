@@ -18,11 +18,12 @@ import Types
 
 server :: Pool Connection -> Server API
 server conns =
-  postSubscriber :<|> 
-  getAllSubscriber :<|> 
-  updateSubscriber :<|>
-  postDistributor :<|>     
+  postSubscriber    :<|> 
+  getAllSubscriber  :<|> 
+  updateSubscriber  :<|>
+  postDistributor   :<|>
   getAllDistributor :<|>
+  updateDistributor :<|>
   searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
@@ -124,13 +125,13 @@ server conns =
     postDistributor distributor = do
       liftIO . withResource conns $ \conn ->
         execute conn
-                    "INSERT INTO input_static_distributors( \    
-                     \ distId,    \
-                     \ distName,  \
-                     \ distAdd,   \
-                     \ distCity,  \
-                     \ distPhone  \
-                     \ ) VALUES (?,?,?,?,?)"
+          "INSERT INTO input_static_distributors( \    
+           \ distId,    \
+           \ distName,  \
+           \ distAdd,   \
+           \ distCity,  \
+           \ distPhone  \
+           \ ) VALUES (?,?,?,?,?)"
         [ distId distributor
         , distName distributor
         , distAdd distributor
@@ -148,6 +149,25 @@ server conns =
           \ distCity,  \
           \ distPhone  \
           \ FROM input_static_distributors"
+         
+    updateDistributor :: Distributor -> Handler String
+    updateDistributor distributor = do
+      liftIO . withResource conns $ \conn ->
+        execute conn
+          "UPDATE input_static_distributors \
+            \ SET \
+          \ distName  = ?,  \
+          \ distAdd   = ?,  \
+          \ distCity  = ?,  \
+          \ distPhone = ?   \
+          \ WHERE   \
+            \ distId  = ? "
+        [ distName distributor
+        , distAdd distributor
+        , distCity distributor
+        , distPhone distributor
+        , distId distributor ]
+      return "Data Tried to add on Database"
 
     searchSubscriber :: SearchQuery -> Handler [Subscriber]
     searchSubscriber sq = liftIO $

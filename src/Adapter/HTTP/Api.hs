@@ -29,6 +29,10 @@ type API =
     "getAllDistributor"
       :> Get '[JSON] [Distributor]
   :<|>
+    "updateDistributor"
+      :> ReqBody '[JSON] Distributor
+      :> Post '[JSON] String
+  :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
       :> Post '[JSON] [Subscriber]
