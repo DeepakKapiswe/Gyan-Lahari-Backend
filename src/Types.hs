@@ -8,7 +8,8 @@ import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 
 data Subscriber = Subscriber {
-    subStartVol  :: Maybe String
+    subId        :: Maybe String
+  , subStartVol  :: Maybe String
   , subSubscriptionType  :: Maybe String
   , subSlipNum   :: Maybe String
   , subName      :: Maybe String

@@ -20,6 +20,7 @@ server :: Pool Connection -> Server API
 server conns =
   postSubscriber :<|> 
   getAllSubscriber :<|> 
+  updateSubscriber :<|>
   postDistributor :<|>     
   getAllDistributor :<|>
   searchSubscriber    
@@ -28,21 +29,21 @@ server conns =
     postSubscriber subscriber = do
       liftIO . withResource conns $ \conn ->
         execute conn
-                    "INSERT INTO input_dynamic_subscribers( \    
-                     \ subStartVol, \
-                     \ subSubscriptionType, \
-                     \ subSlipNum, \
-                     \ subName,      \
-                     \ subAbout,     \
-                     \ subAdd1,      \
-                     \ subAdd2,      \
-                     \ subPost,      \
-                     \ subCity,      \
-                     \ subState,     \
-                     \ subPincode,   \
-                     \ subPhone,     \
-                     \ subRemark,    \
-                     \ subDistId     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        "INSERT INTO input_dynamic_subscribers( \    
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         [ subStartVol subscriber
         , subSubscriptionType subscriber
         , subSlipNum subscriber
@@ -58,26 +59,66 @@ server conns =
         , subRemark  subscriber
         , subDistId  subscriber ]
       return "Data Tried to add on Database"
-                     
+        
     getAllSubscriber :: Handler [Subscriber]
     getAllSubscriber = liftIO $ 
       withResource conns $ \conn ->
-        query_ conn "SELECT  \
-          \ subStartVol, \
-          \ subSubscriptionType, \
-          \ subSlipNum,   \
-          \ subName,      \
-          \ subAbout,     \
-          \ subAdd1,      \
-          \ subAdd2,      \
-          \ subPost,      \
-          \ subCity,      \
-          \ subState,     \
-          \ subPincode,   \
-          \ subPhone,     \
-          \ subRemark,    \
-          \ subDistId     \
-          \ FROM input_dynamic_subscribers LIMIT 200"
+        query_ conn "SELECT    \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId     \
+        \ FROM input_dynamic_subscribers LIMIT 200"
+    
+    updateSubscriber :: Subscriber -> Handler String
+    updateSubscriber subscriber = do
+      liftIO . withResource conns $ \conn ->
+        execute conn
+          "UPDATE input_dynamic_subscribers \
+            \ SET \
+              \ subStartVol = ?,         \
+              \ subSubscriptionType = ?, \
+              \ subSlipNum = ?,   \
+              \ subName = ?,      \
+              \ subAbout = ?,     \
+              \ subAdd1 = ?,      \
+              \ subAdd2 = ?,      \
+              \ subPost = ?,      \
+              \ subCity = ?,      \
+              \ subState = ?,     \
+              \ subPincode = ?,   \
+              \ subPhone = ?,     \
+              \ subRemark = ?,    \
+              \ subDistId = ?     \
+            \ WHERE   \
+              \ subId = ? "
+        [ subStartVol subscriber
+        , subSubscriptionType subscriber
+        , subSlipNum subscriber
+        , subName    subscriber
+        , subAbout   subscriber
+        , subAdd1    subscriber
+        , subAdd2    subscriber
+        , subPost    subscriber
+        , subCity    subscriber
+        , subState   subscriber
+        , subPincode subscriber
+        , subPhone   subscriber
+        , subRemark  subscriber
+        , subDistId  subscriber 
+        , subId      subscriber ]
+      return "Data Updated on Database"
     
     postDistributor :: Distributor -> Handler String
     postDistributor distributor = do
@@ -117,6 +158,7 @@ server conns =
           \  _fname as (SELECT split_part((select * from _name), ' ', 1)), \
           \  _res1 as ( \
           \    SELECT \
+          \     subId,       \
           \     subStartVol, \
           \     subSubscriptionType, \
           \     subSlipNum,   \

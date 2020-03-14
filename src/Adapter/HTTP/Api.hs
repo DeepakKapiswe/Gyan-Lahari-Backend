@@ -17,6 +17,10 @@ type API =
       :> Post '[JSON] String
   :<|> 
     Get '[JSON] [Subscriber]
+  :<|>
+    "updateSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] String
   :<|> 
     "addDistributor"
       :> ReqBody '[JSON] Distributor
