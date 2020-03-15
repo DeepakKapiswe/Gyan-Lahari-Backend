@@ -24,6 +24,7 @@ server conns =
   postDistributor   :<|>
   getAllDistributor :<|>
   updateDistributor :<|>
+  distSubscribers   :<|>
   searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
@@ -169,6 +170,32 @@ server conns =
         , distId distributor ]
       return "Data Tried to add on Database"
 
+    distSubscribers :: Distributor -> Handler [Subscriber]
+    distSubscribers distributor = liftIO $
+      withResource conns $ \conn ->
+        query conn "\
+        \    SELECT \
+        \     subId,       \
+        \     subStartVol, \
+        \     subSubscriptionType, \
+        \     subSlipNum,   \
+        \     subName,      \
+        \     subAbout,     \
+        \     subAdd1,      \
+        \     subAdd2,      \
+        \     subPost,      \
+        \     subCity,      \
+        \     subState,     \
+        \     subPincode,   \
+        \     subPhone,     \
+        \     subRemark,    \
+        \     subDistId     \
+        \    FROM input_dynamic_subscribers \
+        \     WHERE \
+        \      subDistId = ? "
+      [distId distributor]
+
+      
     searchSubscriber :: SearchQuery -> Handler [Subscriber]
     searchSubscriber sq = liftIO $
       withResource conns $ \conn ->

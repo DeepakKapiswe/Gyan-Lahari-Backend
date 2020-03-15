@@ -33,6 +33,10 @@ type API =
       :> ReqBody '[JSON] Distributor
       :> Post '[JSON] String
   :<|>
+    "distSubscribers"
+      :> ReqBody '[JSON] Distributor
+      :> Post '[JSON] [Subscriber]
+  :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
       :> Post '[JSON] [Subscriber]
