@@ -25,6 +25,7 @@ server conns =
   getAllDistributor :<|>
   updateDistributor :<|>
   distSubscribers   :<|>
+  distributionList  :<|>
   searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
@@ -45,9 +46,10 @@ server conns =
         \ subPincode,   \
         \ subPhone,     \
         \ subRemark,    \
-        \ subDistId     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-        [ subStartVol subscriber
-        , subSubscriptionType subscriber
+        \ subDistId,    \
+        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        [ show <$> subStartVol subscriber
+        , show <$> subSubscriptionType subscriber
         , subSlipNum subscriber
         , subName    subscriber
         , subAbout   subscriber
@@ -59,7 +61,8 @@ server conns =
         , subPincode subscriber
         , subPhone   subscriber
         , subRemark  subscriber
-        , subDistId  subscriber ]
+        , subDistId  subscriber
+        , show <$> subEndVol  subscriber ]
       return "Data Tried to add on Database"
         
     getAllSubscriber :: Handler [Subscriber]
@@ -80,7 +83,8 @@ server conns =
         \ subPincode,   \
         \ subPhone,     \
         \ subRemark,    \
-        \ subDistId     \
+        \ subDistId,     \
+        \ subEndVol     \
         \ FROM input_dynamic_subscribers LIMIT 200"
     
     updateSubscriber :: Subscriber -> Handler String
@@ -102,11 +106,12 @@ server conns =
               \ subPincode = ?,   \
               \ subPhone = ?,     \
               \ subRemark = ?,    \
-              \ subDistId = ?     \
+              \ subDistId = ?,    \
+              \ subEndVol = ?     \
             \ WHERE   \
               \ subId = ? "
-        [ subStartVol subscriber
-        , subSubscriptionType subscriber
+        [ show <$> subStartVol subscriber
+        , show <$> subSubscriptionType subscriber
         , subSlipNum subscriber
         , subName    subscriber
         , subAbout   subscriber
@@ -119,6 +124,7 @@ server conns =
         , subPhone   subscriber
         , subRemark  subscriber
         , subDistId  subscriber 
+        , show <$> subEndVol  subscriber
         , subId      subscriber ]
       return "Data Updated on Database"
     
@@ -189,12 +195,44 @@ server conns =
         \     subPincode,   \
         \     subPhone,     \
         \     subRemark,    \
-        \     subDistId     \
+        \     subDistId,    \
+        \     subEndVol     \   
         \    FROM input_dynamic_subscribers \
         \     WHERE \
         \      subDistId = ? "
       [distId distributor]
 
+    distributionList :: DistributionListDetails -> Handler [Subscriber]
+    distributionList dlDetails = liftIO $
+      withResource conns $ \conn ->
+        query conn "\
+        \    SELECT \
+        \     subId,       \
+        \     subStartVol, \
+        \     subSubscriptionType, \
+        \     subSlipNum,   \
+        \     subName,      \
+        \     subAbout,     \
+        \     subAdd1,      \
+        \     subAdd2,      \
+        \     subPost,      \
+        \     subCity,      \
+        \     subState,     \
+        \     subPincode,   \
+        \     subPhone,     \
+        \     subRemark,    \
+        \     subDistId,    \
+        \     subEndVol     \   
+        \    FROM input_dynamic_subscribers \
+        \     WHERE \
+        \      subDistId = ?    \
+        \        AND            \
+        \      subStartVol <= ? \
+        \       AND             \
+        \      subEndVol   >= ? "  
+      [ dldDistId dlDetails
+      , show <$> dldCurrentVol dlDetails 
+      , show <$> dldCurrentVol dlDetails ]
       
     searchSubscriber :: SearchQuery -> Handler [Subscriber]
     searchSubscriber sq = liftIO $
@@ -219,7 +257,8 @@ server conns =
           \     subPincode,   \
           \     subPhone,     \
           \     subRemark,    \
-          \     subDistId     \
+          \     subDistId,    \
+          \     subEndVol     \    
           \    FROM input_dynamic_subscribers \
           \    ORDER BY \
           \      levenshtein_less_equal(subname,(select * from _name), 1,0,1,7) asc \

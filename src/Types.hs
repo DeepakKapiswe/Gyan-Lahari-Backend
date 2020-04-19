@@ -9,8 +9,8 @@ import GHC.Generics (Generic)
 
 data Subscriber = Subscriber {
     subId        :: Maybe String
-  , subStartVol  :: Maybe String
-  , subSubscriptionType  :: Maybe String
+  , subStartVol  :: Maybe Int
+  , subSubscriptionType  :: Maybe Int
   , subSlipNum   :: Maybe String
   , subName      :: Maybe String
   , subAbout     :: Maybe String
@@ -23,6 +23,7 @@ data Subscriber = Subscriber {
   , subPhone     :: Maybe String
   , subRemark    :: Maybe String
   , subDistId    :: Maybe String
+  , subEndVol    :: Maybe Int
 } deriving (Show, Eq, Generic, FromRow)
 
 
@@ -39,6 +40,14 @@ data Distributor = Distributor {
 
 instance FromJSON Distributor
 instance ToJSON Distributor
+
+data DistributionListDetails = DistributionListDetails {
+    dldDistId     :: Maybe String
+  , dldCurrentVol :: Maybe Int
+} deriving (Show, Eq, Generic, FromRow)
+
+instance FromJSON DistributionListDetails
+instance ToJSON   DistributionListDetails
 
 data SearchQuery = SearchQuery {
     -- sqDistId  :: String

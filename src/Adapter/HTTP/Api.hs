@@ -37,6 +37,10 @@ type API =
       :> ReqBody '[JSON] Distributor
       :> Post '[JSON] [Subscriber]
   :<|>
+    "distributionList"
+      :> ReqBody '[JSON] DistributionListDetails
+      :> Post '[JSON] [Subscriber]
+  :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
       :> Post '[JSON] [Subscriber]
