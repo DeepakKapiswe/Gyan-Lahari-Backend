@@ -8,9 +8,11 @@ module Adapter.HTTP.Server where
 import Control.Concurrent
 import Control.Exception (bracket)
 import Control.Monad.IO.Class
+import Control.Monad
 import Data.Pool
 import Database.PostgreSQL.Simple
 import Servant
+import Data.Maybe
 
 import Adapter.HTTP.Api
 import Types
@@ -22,10 +24,12 @@ server conns =
   getAllSubscriber  :<|> 
   updateSubscriber  :<|>
   postDistributor   :<|>
+  getDistributor    :<|>
   getAllDistributor :<|>
   updateDistributor :<|>
   distSubscribers   :<|>
   distributionList  :<|>
+  bulkDistributionList :<|>
   searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
@@ -145,6 +149,22 @@ server conns =
         , distCity distributor
         , distPhone distributor ]
       return "Data Tried to add on Database"
+    
+    getDistributor :: DistributorId -> Handler Distributor
+    getDistributor distId = do 
+      res <- liftIO $
+        withResource conns $ \conn ->
+          query conn "SELECT  \
+            \ distId,    \
+            \ distName,  \
+            \ distAdd,   \
+            \ distCity,  \
+            \ distPhone  \
+            \ FROM input_static_distributors \
+            \ WHERE   \
+              \ distId  = ? "
+            [distId]
+      return $ head res
 
     getAllDistributor :: Handler [Distributor]
     getAllDistributor = liftIO $
@@ -202,9 +222,9 @@ server conns =
         \      subDistId = ? "
       [distId distributor]
 
-    distributionList :: DistributionListDetails -> Handler [Subscriber]
-    distributionList dlDetails = liftIO $
-      withResource conns $ \conn ->
+    distributionList :: DistributionListDetails -> Handler DistributionList
+    distributionList dlDetails = do
+      subs <- liftIO $ withResource conns $ \conn ->
         query conn "\
         \    SELECT \
         \     subId,       \
@@ -230,9 +250,31 @@ server conns =
         \      subStartVol <= ? \
         \       AND             \
         \      subEndVol   >= ? "  
-      [ dldDistId dlDetails
-      , show <$> dldCurrentVol dlDetails 
-      , show <$> dldCurrentVol dlDetails ]
+        [ dldDistId dlDetails
+        , show <$> dldCurrentVol dlDetails 
+        , show <$> dldCurrentVol dlDetails ]
+      
+      dist <- getDistributor . fromJust $ dldDistId dlDetails
+      let currVol = fromJust $ dldCurrentVol dlDetails
+          currExpList = filter (\sub -> subEndVol sub == dldCurrentVol dlDetails) subs
+          runningCount = length subs
+          expiryCount  = length currExpList
+      return $
+        DistributionList
+          dist
+          currVol
+          runningCount
+          expiryCount
+          currExpList
+          subs
+
+
+    bulkDistributionList :: BulkDistributionListDetails -> Handler [DistributionList]
+    bulkDistributionList bdlDetails =
+      forM allDlDetails distributionList
+      where
+        allDlDetails = bulkDistributionDetailsToList bdlDetails
+
       
     searchSubscriber :: SearchQuery -> Handler [Subscriber]
     searchSubscriber sq = liftIO $
@@ -286,4 +328,13 @@ server conns =
         
                          
                          
-              
+a = undefined
+
+bulkDistributionDetailsToList
+  :: BulkDistributionListDetails
+  -> [DistributionListDetails]
+bulkDistributionDetailsToList
+  (BulkDistributionListDetails distIds cv) =
+  case distIds of
+    Nothing -> []
+    Just dIds -> (flip DistributionListDetails cv . pure) <$> dIds  

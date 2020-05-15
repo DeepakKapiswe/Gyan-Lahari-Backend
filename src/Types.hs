@@ -30,6 +30,9 @@ data Subscriber = Subscriber {
 instance FromJSON Subscriber
 instance ToJSON Subscriber
 
+
+type DistributorId = String
+
 data Distributor = Distributor {
     distId    :: Maybe String
   , distName  :: Maybe String
@@ -48,6 +51,26 @@ data DistributionListDetails = DistributionListDetails {
 
 instance FromJSON DistributionListDetails
 instance ToJSON   DistributionListDetails
+
+data BulkDistributionListDetails = BulkDistributionListDetails {
+    bdldDistIds    :: Maybe [String]
+  , bdldCurrentVol :: Maybe Int
+} deriving (Show, Eq, Generic)
+
+instance FromJSON BulkDistributionListDetails
+instance ToJSON   BulkDistributionListDetails
+
+data DistributionList = DistributionList {
+    dlDistributor    :: Distributor
+  , dlCurrentVol     :: Int
+  , dlRunningCount   :: Int
+  , dlExpiryCount    :: Int
+  , dlExpiries       :: [Subscriber]
+  , dlSubscriberList :: [Subscriber]  
+} deriving (Show, Eq, Generic)
+
+instance FromJSON DistributionList
+instance ToJSON   DistributionList
 
 data SearchQuery = SearchQuery {
     -- sqDistId  :: String

@@ -25,6 +25,10 @@ type API =
     "addDistributor"
       :> ReqBody '[JSON] Distributor
       :> Post '[JSON] String
+  :<|> 
+    "getDistributor"
+      :> ReqBody '[JSON] DistributorId
+      :> Post '[JSON] Distributor
   :<|>
     "getAllDistributor"
       :> Get '[JSON] [Distributor]
@@ -39,7 +43,11 @@ type API =
   :<|>
     "distributionList"
       :> ReqBody '[JSON] DistributionListDetails
-      :> Post '[JSON] [Subscriber]
+      :> Post '[JSON] DistributionList
+  :<|>
+    "bulkDistributionList"
+      :> ReqBody '[JSON] BulkDistributionListDetails
+      :> Post '[JSON] [DistributionList] 
   :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
