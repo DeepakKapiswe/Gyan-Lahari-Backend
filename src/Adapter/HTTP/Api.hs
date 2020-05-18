@@ -49,6 +49,14 @@ type API =
       :> ReqBody '[JSON] BulkDistributionListDetails
       :> Post '[JSON] [DistributionList] 
   :<|>
+    "expiryList"
+      :> ReqBody '[JSON] ExpiryListDetails
+      :> Post '[JSON] ExpiryList
+  :<|>
+    "bulkExpiryList"
+      :> ReqBody '[JSON] BulkExpiryListDetails
+      :> Post '[JSON] [ExpiryList]
+  :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
       :> Post '[JSON] [Subscriber]

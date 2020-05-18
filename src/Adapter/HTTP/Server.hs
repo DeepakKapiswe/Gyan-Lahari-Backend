@@ -20,16 +20,18 @@ import Types
 
 server :: Pool Connection -> Server API
 server conns =
-  postSubscriber    :<|> 
-  getAllSubscriber  :<|> 
-  updateSubscriber  :<|>
-  postDistributor   :<|>
-  getDistributor    :<|>
-  getAllDistributor :<|>
-  updateDistributor :<|>
-  distSubscribers   :<|>
-  distributionList  :<|>
+  postSubscriber       :<|> 
+  getAllSubscriber     :<|> 
+  updateSubscriber     :<|>
+  postDistributor      :<|>
+  getDistributor       :<|>
+  getAllDistributor    :<|>
+  updateDistributor    :<|>
+  distSubscribers      :<|>
+  distributionList     :<|>
   bulkDistributionList :<|>
+  expiryList           :<|>
+  bulkExpiryList       :<|>
   searchSubscriber    
   where
     postSubscriber :: Subscriber -> Handler String
@@ -267,14 +269,66 @@ server conns =
           expiryCount
           currExpList
           subs
-
-
+    
     bulkDistributionList :: BulkDistributionListDetails -> Handler [DistributionList]
     bulkDistributionList bdlDetails =
       forM allDlDetails distributionList
       where
         allDlDetails = bulkDistributionDetailsToList bdlDetails
 
+    
+    expiryList :: ExpiryListDetails -> Handler ExpiryList
+    expiryList elDetails = do
+      let expiryVol = fromJust $ eldExpiryVol elDetails
+          expiryYearDuration = fromJust $ eldExpiryYearDuration elDetails
+          expiryLowestVol = expiryVol - (4 * expiryYearDuration + rem expiryVol 4) 
+      expiries <- liftIO $ withResource conns $ \conn ->
+        query conn "\
+        \    SELECT         \
+        \     subId,        \                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+        \     subStartVol,  \
+        \     subSubscriptionType, \
+        \     subSlipNum,   \
+        \     subName,      \
+        \     subAbout,     \
+        \     subAdd1,      \
+        \     subAdd2,      \
+        \     subPost,      \
+        \     subCity,      \
+        \     subState,     \
+        \     subPincode,   \
+        \     subPhone,     \
+        \     subRemark,    \
+        \     subDistId,    \
+        \     subEndVol     \   
+        \    FROM input_dynamic_subscribers \
+        \     WHERE             \
+        \      subDistId = ?    \
+        \        AND            \
+        \      subEndVol < ?    \
+        \       AND             \
+        \      subEndVol   >= ? "  
+        [ eldDistId elDetails
+        , show <$> eldExpiryVol elDetails
+        , show <$> pure expiryLowestVol ]
+      
+      dist <- getDistributor . fromJust $ eldDistId elDetails
+      let expiryCount  = length expiries
+      return $
+        ExpiryList
+          dist
+          expiryVol
+          expiryYearDuration
+          expiryCount
+          expiries
+          
+ 
+
+    bulkExpiryList :: BulkExpiryListDetails -> Handler [ExpiryList]
+    bulkExpiryList belDetails =
+      forM allElDetails expiryList
+      where
+        allElDetails = bulkExpiryListDetailsToList belDetails
       
     searchSubscriber :: SearchQuery -> Handler [Subscriber]
     searchSubscriber sq = liftIO $
@@ -325,9 +379,7 @@ server conns =
           \  SELECT * from _res4"
         (sqSubName sq, sqLimit sq)
 
-        
-                         
-                         
+                     
 a = undefined
 
 bulkDistributionDetailsToList
@@ -337,4 +389,13 @@ bulkDistributionDetailsToList
   (BulkDistributionListDetails distIds cv) =
   case distIds of
     Nothing -> []
-    Just dIds -> (flip DistributionListDetails cv . pure) <$> dIds  
+    Just dIds -> DistributionListDetails . Just <$> dIds <*> pure cv
+
+bulkExpiryListDetailsToList
+  :: BulkExpiryListDetails
+  -> [ExpiryListDetails]
+bulkExpiryListDetailsToList
+  (BulkExpiryListDetails distIds ev eYd) =
+    case distIds of
+      Nothing   -> []
+      Just dIds -> ExpiryListDetails . Just <$> dIds <*> pure ev <*> pure eYd

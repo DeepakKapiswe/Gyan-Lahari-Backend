@@ -72,6 +72,35 @@ data DistributionList = DistributionList {
 instance FromJSON DistributionList
 instance ToJSON   DistributionList
 
+data ExpiryListDetails = ExpiryListDetails {
+    eldDistId             :: Maybe String
+  , eldExpiryVol          :: Maybe Int
+  , eldExpiryYearDuration :: Maybe Int
+} deriving (Show, Eq, Generic, FromRow)
+
+instance FromJSON ExpiryListDetails
+instance ToJSON   ExpiryListDetails
+
+data BulkExpiryListDetails = BulkExpiryListDetails {
+    beldDistIds            :: Maybe [String]
+  , beldExpiryVol          :: Maybe Int
+  , beldExpiryYearDuration :: Maybe Int
+} deriving (Show, Eq, Generic)
+
+instance FromJSON BulkExpiryListDetails
+instance ToJSON   BulkExpiryListDetails
+
+data ExpiryList = ExpiryList {
+    elDistributor        :: Distributor
+  , elExpiryVol          :: Int
+  , elExpiryYearDuration :: Int
+  , elExpiryCount        :: Int
+  , elExpiries           :: [Subscriber]
+} deriving (Show, Eq, Generic)
+
+instance FromJSON ExpiryList
+instance ToJSON   ExpiryList
+
 data SearchQuery = SearchQuery {
     -- sqDistId  :: String
    sqSubName :: String
