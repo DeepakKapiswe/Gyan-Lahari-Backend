@@ -32,13 +32,15 @@ server conns =
   bulkDistributionList :<|>
   expiryList           :<|>
   bulkExpiryList       :<|>
-  searchSubscriber    
+  searchSubscriber     :<|>
+  recentlyAddedSubscribers
   where
-    postSubscriber :: Subscriber -> Handler String
+    postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
-      liftIO . withResource conns $ \conn ->
-        execute conn
-        "INSERT INTO input_dynamic_subscribers( \    
+      res <- liftIO . withResource conns $ \conn -> 
+       query conn
+        "INSERT INTO input_dynamic_subscribers( \
+        \ subId,        \
         \ subStartVol,         \
         \ subSubscriptionType, \
         \ subSlipNum,   \
@@ -53,10 +55,29 @@ server conns =
         \ subPhone,     \
         \ subRemark,    \
         \ subDistId,    \
-        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-        [ show <$> subStartVol subscriber
+        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+        \ RETURNING \
+        \  subId,       \
+        \  subStartVol, \
+        \  subSubscriptionType, \
+        \  subSlipNum,   \
+        \  subName,      \
+        \  subAbout,     \
+        \  subAdd1,      \
+        \  subAdd2,      \
+        \  subPost,      \
+        \  subCity,      \
+        \  subState,     \
+        \  subPincode,   \
+        \  subPhone,     \
+        \  subRemark,    \
+        \  subDistId,    \
+        \  subEndVol     "
+
+        [ pure "AAAA"
+        , show <$> subStartVol subscriber
         , show <$> subSubscriptionType subscriber
-        , subSlipNum subscriber
+        , show <$> subSlipNum subscriber
         , subName    subscriber
         , subAbout   subscriber
         , subAdd1    subscriber
@@ -69,7 +90,7 @@ server conns =
         , subRemark  subscriber
         , subDistId  subscriber
         , show <$> subEndVol  subscriber ]
-      return "Data Tried to add on Database"
+      return $ head res
         
     getAllSubscriber :: Handler [Subscriber]
     getAllSubscriber = liftIO $ 
@@ -118,7 +139,7 @@ server conns =
               \ subId = ? "
         [ show <$> subStartVol subscriber
         , show <$> subSubscriptionType subscriber
-        , subSlipNum subscriber
+        , show <$> subSlipNum subscriber
         , subName    subscriber
         , subAbout   subscriber
         , subAdd1    subscriber
@@ -378,6 +399,31 @@ server conns =
           \       LIMIT ? ) \
           \  SELECT * from _res4"
         (sqSubName sq, sqLimit sq)
+
+    recentlyAddedSubscribers :: Int -> Handler [Subscriber]
+    recentlyAddedSubscribers count = liftIO $ 
+      withResource conns $ \conn ->
+        query conn "SELECT    \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId,     \
+        \ subEndVol     \
+        \ FROM input_dynamic_subscribers \
+        \ ORDER BY subId DESC \
+        \ LIMIT ?"
+        [show count]
 
                      
 a = undefined

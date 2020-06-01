@@ -11,7 +11,7 @@ data Subscriber = Subscriber {
     subId        :: Maybe String
   , subStartVol  :: Maybe Int
   , subSubscriptionType  :: Maybe Int
-  , subSlipNum   :: Maybe String
+  , subSlipNum   :: Maybe Int
   , subName      :: Maybe String
   , subAbout     :: Maybe String
   , subAdd1      :: Maybe String

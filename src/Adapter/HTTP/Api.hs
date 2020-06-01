@@ -14,7 +14,7 @@ import Types
 type API =
     "addUser"
       :> ReqBody '[JSON] Subscriber
-      :> Post '[JSON] String
+      :> Post '[JSON] Subscriber
   :<|> 
     Get '[JSON] [Subscriber]
   :<|>
@@ -59,6 +59,10 @@ type API =
   :<|>
     "searchSubscriber"
       :> ReqBody '[JSON] SearchQuery
+      :> Post '[JSON] [Subscriber]
+  :<|>
+    "recentlyAddedSubscribers"
+      :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
 
 api :: Proxy (API :<|> Raw)
