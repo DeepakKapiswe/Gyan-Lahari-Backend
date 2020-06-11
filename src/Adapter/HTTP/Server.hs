@@ -112,7 +112,17 @@ server conns =
         \ subRemark,    \
         \ subDistId,     \
         \ subEndVol     \
-        \ FROM input_dynamic_subscribers LIMIT 200"
+        \ FROM input_dynamic_subscribers \
+        \ ORDER BY \
+          \ substate, \
+          \ subcity,  \
+          \ subpost,  \
+          \ subpincode, \
+          \ subadd2,  \
+          \ subadd1,  \
+          \ subabout, \
+          \ subname   \
+          \ LIMIT 200 "
     
     updateSubscriber :: Subscriber -> Handler String
     updateSubscriber subscriber = do
@@ -242,7 +252,16 @@ server conns =
         \     subEndVol     \   
         \    FROM input_dynamic_subscribers \
         \     WHERE \
-        \      subDistId = ? "
+        \      subDistId = ? \
+        \    ORDER BY \
+             \ substate, \
+             \ subcity,  \
+             \ subpost,  \
+             \ subpincode, \
+             \ subadd2,  \
+             \ subadd1,  \
+             \ subabout, \
+             \ subname"
       [distId distributor]
 
     distributionList :: DistributionListDetails -> Handler DistributionList
@@ -272,7 +291,16 @@ server conns =
         \        AND            \
         \      subStartVol <= ? \
         \       AND             \
-        \      subEndVol   >= ? "  
+        \      subEndVol   >= ? \
+        \    ORDER BY \
+             \ substate, \
+             \ subcity,  \
+             \ subpost,  \
+             \ subpincode, \
+             \ subadd2,  \
+             \ subadd1,  \
+             \ subabout, \
+             \ subname"  
         [ dldDistId dlDetails
         , show <$> dldCurrentVol dlDetails 
         , show <$> dldCurrentVol dlDetails ]
@@ -328,7 +356,16 @@ server conns =
         \        AND            \
         \      subEndVol < ?    \
         \       AND             \
-        \      subEndVol   >= ? "  
+        \      subEndVol   >= ? \
+        \    ORDER BY \
+             \ substate, \
+             \ subcity,  \
+             \ subpost,  \
+             \ subpincode, \
+             \ subadd2,  \
+             \ subadd1,  \
+             \ subabout, \
+             \ subname"  
         [ eldDistId elDetails
         , show <$> eldExpiryVol elDetails
         , show <$> pure expiryLowestVol ]
