@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 
 module Adapter.HTTP.Server where
@@ -33,7 +34,8 @@ server conns =
   expiryList           :<|>
   bulkExpiryList       :<|>
   searchSubscriber     :<|>
-  recentlyAddedSubscribers
+  recentlyAddedSubscribers :<|>
+  checkUserAuth
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
@@ -440,7 +442,7 @@ server conns =
     recentlyAddedSubscribers :: Int -> Handler [Subscriber]
     recentlyAddedSubscribers count = liftIO $ 
       withResource conns $ \conn ->
-        query conn "SELECT    \
+        query conn "SELECT     \
         \ subId,               \
         \ subStartVol,         \
         \ subSubscriptionType, \
@@ -455,12 +457,26 @@ server conns =
         \ subPincode,   \
         \ subPhone,     \
         \ subRemark,    \
-        \ subDistId,     \
+        \ subDistId,    \
         \ subEndVol     \
         \ FROM input_dynamic_subscribers \
         \ ORDER BY subId DESC \
         \ LIMIT ?"
         [show count]
+    
+    checkUserAuth :: UserAuth -> Handler Bool
+    checkUserAuth (UserAuth ui pass) = do
+      (res::[UserAuth]) <- liftIO $ withResource conns $ \conn ->
+        query conn "SELECT \
+        \ userId, \
+        \ userPassword \
+        \ FROM userLogin \
+        \ WHERE \
+        \   userId = ? \
+        \    AND \
+        \   userPassword = ?"
+          [ ui, pass]
+      return (res /= [])
 
                      
 a = undefined

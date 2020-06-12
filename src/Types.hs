@@ -110,3 +110,11 @@ data SearchQuery = SearchQuery {
 
 instance FromJSON SearchQuery
 instance ToJSON SearchQuery
+
+data UserAuth = UserAuth {
+    userId :: String
+  , password :: String
+} deriving (Show, Eq, Generic, FromRow, ToRow)
+
+instance FromJSON UserAuth
+instance ToJSON UserAuth

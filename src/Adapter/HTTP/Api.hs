@@ -64,6 +64,10 @@ type API =
     "recentlyAddedSubscribers"
       :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "checkUserAuth"
+      :> ReqBody '[JSON] UserAuth
+      :> Post '[JSON] Bool
 
 api :: Proxy (API :<|> Raw)
 api = Proxy
