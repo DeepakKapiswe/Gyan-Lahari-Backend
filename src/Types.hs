@@ -6,6 +6,7 @@ module Types where
 import Data.Aeson
 import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
+import Servant.Auth.Server
 
 data Subscriber = Subscriber {
     subId        :: Maybe String
@@ -112,9 +113,11 @@ instance FromJSON SearchQuery
 instance ToJSON SearchQuery
 
 data UserAuth = UserAuth {
-    userId :: String
+    userId   :: String
   , password :: String
 } deriving (Show, Eq, Generic, FromRow, ToRow)
 
 instance FromJSON UserAuth
 instance ToJSON UserAuth
+instance FromJWT UserAuth
+instance ToJWT UserAuth

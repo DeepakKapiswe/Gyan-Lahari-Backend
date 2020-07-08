@@ -15,12 +15,62 @@ import Database.PostgreSQL.Simple
 import Servant
 import Data.Maybe
 
+import qualified Data.UUID as U
+import Data.UUID.V4
+import qualified Database.Redis as R
+import qualified Data.ByteString.Char8 as B
+
+import Servant.Auth.Server
+-- import Servant.Auth.Server.SetCookieOrphan ()
+
 import Adapter.HTTP.Api
 import Types
 
 
-server :: Pool Connection -> Server API
-server conns =
+server ::
+     Pool Connection
+  -> R.Connection
+  -> CookieSettings
+  -> JWTSettings
+  -> Server (API auths)
+server a b cs jwts =
+       protected a b
+  :<|> unprotected cs jwts
+
+unprotected :: CookieSettings -> JWTSettings -> Server UnProtectedAPI
+unprotected = checkCreds
+
+protected ::
+     Pool Connection 
+  -> R.Connection 
+  -> AuthResult UserAuth
+  -> Server ProtectedAPI
+protected a b (Authenticated user) = serverP a b 
+protected _ _ _ = throwAll err401
+
+-- Here is the login handler
+checkCreds :: CookieSettings
+           -> JWTSettings
+           -> UserAuth
+           -> Handler (Headers '[ Header "Set-Cookie" SetCookie
+                                , Header "Set-Cookie" SetCookie]
+                               NoContent)
+checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
+   -- Usually you would ask a database for the user info. This is just a
+   -- regular servant handler, so you can follow your normal database access
+   -- patterns (including using 'enter').
+  --  let usr = UserAuth "Ali Baba" "ali@email.com"
+   liftIO $ print usr
+   mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
+   case mApplyCookies of
+     Nothing           -> throwError err401
+     Just applyCookies -> return $ applyCookies NoContent
+checkCreds _ _ _ = do
+  liftIO $ print "In Check Cred Error Branch"
+  throwError err401
+
+serverP :: Pool Connection -> R.Connection -> Server ProtectedAPI
+serverP conns redConn =
   postSubscriber       :<|> 
   getAllSubscriber     :<|> 
   updateSubscriber     :<|>
@@ -95,8 +145,10 @@ server conns =
       return $ head res
         
     getAllSubscriber :: Handler [Subscriber]
-    getAllSubscriber = liftIO $ 
-      withResource conns $ \conn ->
+    getAllSubscriber = do
+      a <- liftIO . execRedisIO $ R.get "hari" 
+      liftIO $ print a
+      liftIO $ withResource conns $ \conn ->
         query_ conn "SELECT    \
         \ subId,               \
         \ subStartVol,         \
@@ -112,7 +164,7 @@ server conns =
         \ subPincode,   \
         \ subPhone,     \
         \ subRemark,    \
-        \ subDistId,     \
+        \ subDistId,    \
         \ subEndVol     \
         \ FROM input_dynamic_subscribers \
         \ ORDER BY \
@@ -434,7 +486,7 @@ server conns =
           \    SELECT * from _res3 \
           \      ORDER BY  \
           \        (select min(levenshtein_less_equal(name,(select * from _fname),2,1,1,7)) from unnest(string_to_array(_res3.subname, ' ')) as name), \
-          \         levenshtein_less_equal(_res3.subname,(select * from _name), 1,0,1,7) asc \
+          \         levenshtein _less_equal(_res3.subname,(select * from _name), 1,0,1,7) asc \
           \       LIMIT ? ) \
           \  SELECT * from _res4"
         (sqSubName sq, sqLimit sq)
@@ -476,10 +528,18 @@ server conns =
         \    AND \
         \   userPassword = ?"
           [ ui, pass]
+      liftIO . execRedisIO $ do
+        bs <- liftIO $ nextRandom
+        R.set "hari" (U.toASCIIBytes bs)
       return (res /= [])
+
+    execRedisIO :: R.Redis a -> IO a
+    execRedisIO a = R.runRedis redConn a
 
                      
 a = undefined
+
+
 
 bulkDistributionDetailsToList
   :: BulkDistributionListDetails
@@ -498,3 +558,5 @@ bulkExpiryListDetailsToList
     case distIds of
       Nothing   -> []
       Just dIds -> ExpiryListDetails . Just <$> dIds <*> pure ev <*> pure eYd
+
+-- ------------------------------------------------------------------------------------
