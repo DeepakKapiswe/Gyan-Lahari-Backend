@@ -25,10 +25,11 @@ type API auths =
   :<|> UnProtectedAPI
 
 
-type UnProtectedAPI =
-  "login"
+type UnProtectedAPI = "login"
     :> ReqBody '[JSON] UserAuth
-    :> Verb 'POST 204 '[JSON] (AuthCookies NoContent)
+    -- :> POST '[JSON] UserAuth
+    -- :> Verb 'POST 204 '[JSON] (AuthCookies UserAuth)
+    :> Verb 'POST 200 '[JSON] (AuthCookies UserAuth)
 
 
 type ProtectedAPI =

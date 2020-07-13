@@ -54,17 +54,22 @@ checkCreds :: CookieSettings
            -> UserAuth
            -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                 , Header "Set-Cookie" SetCookie]
-                               NoContent)
+                               UserAuth)
 checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
    -- Usually you would ask a database for the user info. This is just a
    -- regular servant handler, so you can follow your normal database access
    -- patterns (including using 'enter').
   --  let usr = UserAuth "Ali Baba" "ali@email.com"
-   liftIO $ print usr
    mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
    case mApplyCookies of
-     Nothing           -> throwError err401
-     Just applyCookies -> return $ applyCookies NoContent
+     Nothing           -> do
+       liftIO $ print "Yeah I'm in nothing branch" 
+
+       throwError err401
+     Just applyCookies -> do
+       liftIO $ print "Yeah I'm in  apply Cookies Success branch" 
+       liftIO $ print usr 
+       return $ applyCookies usr   
 checkCreds _ _ _ = do
   liftIO $ print "In Check Cred Error Branch"
   throwError err401

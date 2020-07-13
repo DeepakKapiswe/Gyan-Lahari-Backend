@@ -14,21 +14,23 @@ import           Servant
 import           System.IO
 
 import           Network.Wai.Middleware.Cors
+import           Network.Wai.Middleware.AddHeaders (addHeaders)
+import           Network.Wai.Middleware.Servant.Options
 
 import           Adapter.HTTP.Api
 import           Adapter.HTTP.Server
 import           Adapter.HTTP.ProxyServer
 import           Adapter.PostgreSQL.UserData
 
-import Servant.Auth.Server
+import           Servant.Auth.Server
 
 
 import Data.Pool
 import Database.PostgreSQL.Simple hiding ((:.))
 import qualified Database.Redis as R
 
-run :: IO ()
-run = do
+runApp :: IO ()
+runApp = do
   let port = 7000
   let connStr = ""
   pool <- initConnectionPool connStr
@@ -37,31 +39,41 @@ run = do
   let settings = setPort port $
         setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) $
         defaultSettings
-  -- We *also* need a key to sign the cookies
   myKey <- generateKey
-  -- Adding some configurations. 'Cookie' requires, in addition to
-  -- CookieSettings, JWTSettings (for signing), so everything is just as before
   let jwtCfg = defaultJWTSettings myKey
       cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
-      cookieSettings = defaultCookieSettings {cookieIsSecure = NotSecure, cookieXsrfSetting = Nothing}
-  Network.Wai.Handler.Warp.run 7000 $ serveWithContext api cfg (server pool redConn cookieSettings jwtCfg)
-  -- Network.Wai.Handler.Warp.run 7000 $ serveWithContext api cfg (server pool redConn defaultCookieSettings jwtCfg)
-  -- manager <- newManager defaultManagerSettings
-  -- runSettings settings $ mkApp manager cfg jwtCfg pool redConn
+      ctx :: Context '[ CookieSettings, JWTSettings ]
+      ctx = defaultCookieSettings :. jwtCfg :. EmptyContext
+      cookieSettings = defaultCookieSettings {cookieIsSecure = NotSecure}
+  run 7000 .
+    -- allowCsrf .
+    corsified $
+    -- provideOptions api $        -- Generate OPTIONS handlers for routes
+    serveWithContext api ctx (server pool redConn cookieSettings jwtCfg)
+    where
     
--- mkApp ::
---      Manager
---   -> CookieSettings
---   -> JWTSettings
---   -> Pool Connection
---   -> R.Connection
---   -> Application
--- mkApp manager cfg jwtCfg conns redConn = cors (const . Just $ corsPolicy) $
---   (serveWithContext api cfg $ (server conns redConn defaultCookieSettings jwtCfg) :<|> forwardServer manager)
---   where
-
---     -- Need to explictly allow needed extra headers through CORS.
---     corsPolicy = simpleCorsResourcePolicy
---       { corsRequestHeaders = [ "content-type" ]
---       }
-    
+      -- | @x-csrf-token@ allowance.
+      -- The following header will be set: @Access-Control-Allow-Headers: x-csrf-token@.
+      allowCsrf :: Middleware
+      allowCsrf = addHeaders [("Access-Control-Allow-Headers", "x-csrf-token,authorization")]
+      -- | CORS middleware configured with 'appCorsResourcePolicy'.
+      corsified :: Middleware
+      corsified = cors (const $ Just appCorsResourcePolicy)
+      
+      -- | Cors resource policy to be used with 'corsified' middleware.
+      --
+      -- This policy will set the following:
+      --
+      -- * RequestHeaders: @Content-Type@
+      -- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
+      appCorsResourcePolicy :: CorsResourcePolicy
+      appCorsResourcePolicy = CorsResourcePolicy {
+          corsOrigins        = Nothing
+        , corsMethods        = ["OPTIONS", "GET", "PUT", "POST"]
+        , corsRequestHeaders = ["Authorization", "Content-Type","X-XSRF-TOKEN"]
+        , corsExposedHeaders = Nothing
+        , corsMaxAge         = Nothing
+        , corsVaryOrigin     = False
+        , corsRequireOrigin  = False
+        , corsIgnoreFailures = False
+      }

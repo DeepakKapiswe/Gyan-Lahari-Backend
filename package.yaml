@@ -26,10 +26,12 @@ dependencies:
 - servant-server
 - servant-client
 - servant-auth-server
+- servant-options
 - transformers
 - aeson
 - wai
 - wai-cors
+- wai-extra
 - warp
 - resource-pool
 - postgresql-simple
