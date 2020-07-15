@@ -41,10 +41,9 @@ runApp = do
         defaultSettings
   myKey <- generateKey
   let jwtCfg = defaultJWTSettings myKey
-      cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
       ctx :: Context '[ CookieSettings, JWTSettings ]
-      ctx = defaultCookieSettings :. jwtCfg :. EmptyContext
-      cookieSettings = defaultCookieSettings {cookieIsSecure = NotSecure}
+      ctx = cookieSettings :. jwtCfg :. EmptyContext
+      cookieSettings = defaultCookieSettings {cookieIsSecure = NotSecure, cookieXsrfSetting = Nothing }
   run 7000 .
     -- allowCsrf .
     corsified $
@@ -68,7 +67,7 @@ runApp = do
       -- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
       appCorsResourcePolicy :: CorsResourcePolicy
       appCorsResourcePolicy = CorsResourcePolicy {
-          corsOrigins        = Nothing
+          corsOrigins        = Just ([ "http://localhost:3000" ], True)
         , corsMethods        = ["OPTIONS", "GET", "PUT", "POST"]
         , corsRequestHeaders = ["Authorization", "Content-Type","X-XSRF-TOKEN"]
         , corsExposedHeaders = Nothing
