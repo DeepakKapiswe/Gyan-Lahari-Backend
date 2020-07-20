@@ -8,6 +8,7 @@ import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Handler.WarpTLS
 import           Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import           Network.HTTP.ReverseProxy
 import           Servant
@@ -33,6 +34,7 @@ runApp :: IO ()
 runApp = do
   let port = 7000
   let connStr = ""
+  let tls = tlsSettings "./tlsSettings/server.crt" "./tlsSettings/server.key"
   pool <- initConnectionPool connStr
   redConn <- R.checkedConnect R.defaultConnectInfo
   initDB connStr
@@ -43,34 +45,30 @@ runApp = do
   let jwtCfg = defaultJWTSettings myKey
       ctx :: Context '[ CookieSettings, JWTSettings ]
       ctx = cookieSettings :. jwtCfg :. EmptyContext
-      cookieSettings = defaultCookieSettings {cookieIsSecure = NotSecure, cookieXsrfSetting = Nothing }
-  run 7000 .
+      cookieSettings = defaultCookieSettings {
+        cookieXsrfSetting = Nothing,
+        cookieSameSite = AnySite }
+  runTLS tls (setPort port defaultSettings) .
     -- allowCsrf .
     corsified $
-    -- provideOptions api $        -- Generate OPTIONS handlers for routes
     serveWithContext api ctx (server pool redConn cookieSettings jwtCfg)
     where
     
       -- | @x-csrf-token@ allowance.
       -- The following header will be set: @Access-Control-Allow-Headers: x-csrf-token@.
       allowCsrf :: Middleware
-      allowCsrf = addHeaders [("Access-Control-Allow-Headers", "x-csrf-token,authorization")]
+      allowCsrf = addHeaders [("Access-Control-Allow-Headers", "Authorization, Content-Type, X-XSRF-TOKEN")]
       -- | CORS middleware configured with 'appCorsResourcePolicy'.
       corsified :: Middleware
       corsified = cors (const $ Just appCorsResourcePolicy)
       
       -- | Cors resource policy to be used with 'corsified' middleware.
-      --
-      -- This policy will set the following:
-      --
-      -- * RequestHeaders: @Content-Type@
-      -- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
       appCorsResourcePolicy :: CorsResourcePolicy
       appCorsResourcePolicy = CorsResourcePolicy {
           corsOrigins        = Just ([ "http://localhost:3000" ], True)
         , corsMethods        = ["OPTIONS", "GET", "PUT", "POST"]
         , corsRequestHeaders = ["Authorization", "Content-Type","X-XSRF-TOKEN"]
-        , corsExposedHeaders = Nothing
+        , corsExposedHeaders = Just ["Authorization", "Content-Type","X-XSRF-TOKEN"]
         , corsMaxAge         = Nothing
         , corsVaryOrigin     = False
         , corsRequireOrigin  = False

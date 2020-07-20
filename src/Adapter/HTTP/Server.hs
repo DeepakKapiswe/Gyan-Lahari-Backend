@@ -19,6 +19,7 @@ import qualified Data.UUID as U
 import Data.UUID.V4
 import qualified Database.Redis as R
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as BL
 
 import Servant.Auth.Server
 -- import Servant.Auth.Server.SetCookieOrphan ()
@@ -46,7 +47,7 @@ protected ::
   -> AuthResult UserAuth
   -> Server ProtectedAPI
 protected a b (Authenticated user) = serverP a b 
-protected _ _ _ = throwAll err401
+protected _ _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 -- Here is the login handler
 checkCreds :: CookieSettings
@@ -97,7 +98,7 @@ serverP conns redConn =
       res <- liftIO . withResource conns $ \conn -> 
        query conn
         "INSERT INTO input_dynamic_subscribers( \
-        \ subId,        \
+        \ subId,               \
         \ subStartVol,         \
         \ subSubscriptionType, \
         \ subSlipNum,   \

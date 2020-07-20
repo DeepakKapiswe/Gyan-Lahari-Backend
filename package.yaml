@@ -33,6 +33,7 @@ dependencies:
 - wai-cors
 - wai-extra
 - warp
+- warp-tls
 - resource-pool
 - postgresql-simple
 - bytestring
