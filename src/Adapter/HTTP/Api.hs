@@ -9,8 +9,6 @@ import Servant
 import Data.Aeson
 import GHC.Generics
 import Servant.Auth.Server
-import Servant.Auth.Server.SetCookieOrphan ()
-
 
 import Types
 
@@ -21,14 +19,13 @@ type AuthCookies = Headers '[ Header "Set-Cookie" SetCookie
                             , Header "Set-Cookie" SetCookie]
 
 type API auths =
-  (Auth auths UserAuth :> ProtectedAPI)
-  :<|> UnProtectedAPI
+  "api" :> 
+    ((Auth auths UserAuth :> ProtectedAPI)
+    :<|> UnProtectedAPI)
 
 
 type UnProtectedAPI = "login"
     :> ReqBody '[JSON] UserAuth
-    -- :> POST '[JSON] UserAuth
-    -- :> Verb 'POST 204 '[JSON] (AuthCookies UserAuth)
     :> Verb 'POST 200 '[JSON] (AuthCookies UserAuth)
 
 

@@ -22,7 +22,6 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 
 import Servant.Auth.Server
--- import Servant.Auth.Server.SetCookieOrphan ()
 
 import Adapter.HTTP.Api
 import Types
@@ -57,10 +56,6 @@ checkCreds :: CookieSettings
                                 , Header "Set-Cookie" SetCookie]
                                UserAuth)
 checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
-   -- Usually you would ask a database for the user info. This is just a
-   -- regular servant handler, so you can follow your normal database access
-   -- patterns (including using 'enter').
-  --  let usr = UserAuth "Ali Baba" "ali@email.com"
    mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
    case mApplyCookies of
      Nothing           -> do
