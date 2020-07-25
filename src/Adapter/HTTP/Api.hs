@@ -8,10 +8,28 @@ module Adapter.HTTP.Api where
 import Servant
 import Data.Aeson
 import GHC.Generics
+import Servant.Auth.Server
 
 import Types
 
-type API =
+api :: Proxy (API '[Cookie])
+api = Proxy
+
+type AuthCookies = Headers '[ Header "Set-Cookie" SetCookie
+                            , Header "Set-Cookie" SetCookie]
+
+type API auths =
+  "api" :> 
+    ((Auth auths UserAuth :> ProtectedAPI)
+    :<|> UnProtectedAPI)
+
+
+type UnProtectedAPI = "login"
+    :> ReqBody '[JSON] UserAuth
+    :> Verb 'POST 200 '[JSON] (AuthCookies UserAuth)
+
+
+type ProtectedAPI =
     "addUser"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] Subscriber
@@ -64,6 +82,9 @@ type API =
     "recentlyAddedSubscribers"
       :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "checkUserAuth"
+      :> ReqBody '[JSON] UserAuth
+      :> Post '[JSON] Bool
 
-api :: Proxy (API :<|> Raw)
-api = Proxy
+

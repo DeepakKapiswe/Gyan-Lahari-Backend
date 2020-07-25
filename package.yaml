@@ -22,19 +22,26 @@ description:         Please see the README on GitHub at <https://github.com/deep
 dependencies:
 - base >= 4.7 && < 5
 - servant
+- servant-auth
 - servant-server
 - servant-client
+- servant-auth-server
+- servant-options
 - transformers
 - aeson
 - wai
 - wai-cors
+- wai-extra
 - warp
+- warp-tls
 - resource-pool
 - postgresql-simple
 - bytestring
 - http-client
 - http-types
 - http-reverse-proxy
+- hedis
+- uuid
 
 library:
   source-dirs: src
