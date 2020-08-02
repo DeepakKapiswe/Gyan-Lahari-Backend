@@ -8,7 +8,7 @@ import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
 import           Network.Wai.Handler.Warp
-import           Network.Wai.Handler.WarpTLS
+-- import           Network.Wai.Handler.WarpTLS
 import           Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import           Network.HTTP.ReverseProxy
 import           Servant
@@ -16,7 +16,7 @@ import           System.IO
 
 import           Network.Wai.Middleware.Cors
 import           Network.Wai.Middleware.AddHeaders (addHeaders)
-import           Network.Wai.Middleware.Servant.Options
+-- import           Network.Wai.Middleware.Servant.Options
 
 import           Adapter.HTTP.Api
 import           Adapter.HTTP.Server
