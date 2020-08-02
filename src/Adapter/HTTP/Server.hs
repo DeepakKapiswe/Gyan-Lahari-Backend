@@ -17,7 +17,7 @@ import Data.Maybe
 
 import qualified Data.UUID as U
 import Data.UUID.V4
-import qualified Database.Redis as R
+-- import qualified Database.Redis as R
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 
@@ -29,12 +29,12 @@ import Types
 
 server ::
      Pool Connection
-  -> R.Connection
+  -- -> R.Connection
   -> CookieSettings
   -> JWTSettings
   -> Server (API auths)
-server a b cs jwts =
-       protected a b
+server a cs jwts =
+       protected a
   :<|> unprotected cs jwts
 
 unprotected :: CookieSettings -> JWTSettings -> Server UnProtectedAPI
@@ -42,11 +42,11 @@ unprotected = checkCreds
 
 protected ::
      Pool Connection 
-  -> R.Connection 
+  -- -> R.Connection 
   -> AuthResult UserAuth
   -> Server ProtectedAPI
-protected a b (Authenticated user) = serverP a b 
-protected _ _ x = throwAll err401 { errBody = BL.pack $ show x }
+protected a (Authenticated user) = serverP a
+protected _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 -- Here is the login handler
 checkCreds :: CookieSettings
@@ -60,7 +60,7 @@ checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
    case mApplyCookies of
      Nothing           -> do
        liftIO $ print "Yeah I'm in nothing branch" 
-
+ 
        throwError err401
      Just applyCookies -> do
        liftIO $ print "Yeah I'm in  apply Cookies Success branch" 
@@ -70,8 +70,8 @@ checkCreds _ _ _ = do
   liftIO $ print "In Check Cred Error Branch"
   throwError err401
 
-serverP :: Pool Connection -> R.Connection -> Server ProtectedAPI
-serverP conns redConn =
+serverP :: Pool Connection -> Server ProtectedAPI
+serverP conns=
   postSubscriber       :<|> 
   getAllSubscriber     :<|> 
   updateSubscriber     :<|>
@@ -147,8 +147,8 @@ serverP conns redConn =
         
     getAllSubscriber :: Handler [Subscriber]
     getAllSubscriber = do
-      a <- liftIO . execRedisIO $ R.get "hari" 
-      liftIO $ print a
+      -- a <- liftIO . execRedisIO $ R.get "hari" 
+      -- liftIO $ print a
       liftIO $ withResource conns $ \conn ->
         query_ conn "SELECT    \
         \ subId,               \
@@ -529,13 +529,13 @@ serverP conns redConn =
         \    AND \
         \   userPassword = ?"
           [ ui, pass]
-      liftIO . execRedisIO $ do
-        bs <- liftIO $ nextRandom
-        R.set "hari" (U.toASCIIBytes bs)
+      -- liftIO . execRedisIO $ do
+      --   bs <- liftIO $ nextRandom
+      --   R.set "hari" (U.toASCIIBytes bs)
       return (res /= [])
 
-    execRedisIO :: R.Redis a -> IO a
-    execRedisIO a = R.runRedis redConn a
+    -- execRedisIO :: R.Redis a -> IO a
+    -- execRedisIO a = R.runRedis redConn a
 
                      
 a = undefined

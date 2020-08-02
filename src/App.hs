@@ -36,7 +36,7 @@ runApp = do
   let connStr = ""
 
   pool <- initConnectionPool connStr
-  redConn <- R.checkedConnect R.defaultConnectInfo
+  -- redConn <- R.checkedConnect R.defaultConnectInfo
   initDB connStr
 
   myKey <- generateKey
@@ -46,5 +46,5 @@ runApp = do
       cookieSettings = defaultCookieSettings
         { cookieSameSite = SameSiteStrict}
   run 7000 $
-    serveWithContext api ctx (server pool redConn cookieSettings jwtCfg)
+    serveWithContext api ctx (server pool cookieSettings jwtCfg)
     
