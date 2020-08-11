@@ -33,7 +33,13 @@ import qualified Database.Redis as R
 runApp :: IO ()
 runApp = do
   let port = 7000
-  let connStr = ""
+  let connStr = postgreSQLConnectionString $
+                  defaultConnectInfo { 
+                    connectHost = "X.X.X.X",
+                    connectPassword = "some password",
+                    connectDatabase = "some db name" 
+                    }
+
 
   pool <- initConnectionPool connStr
   -- redConn <- R.checkedConnect R.defaultConnectInfo

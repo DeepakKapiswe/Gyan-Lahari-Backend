@@ -59,8 +59,7 @@ checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
    mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
    case mApplyCookies of
      Nothing           -> do
-       liftIO $ print "Yeah I'm in nothing branch" 
- 
+       liftIO $ print "Yeah I'm in nothing branch"
        throwError err401
      Just applyCookies -> do
        liftIO $ print "Yeah I'm in  apply Cookies Success branch" 
@@ -144,9 +143,10 @@ serverP conns=
         , subDistId  subscriber
         , show <$> subEndVol  subscriber ]
       return $ head res
-        
+
     getAllSubscriber :: Handler [Subscriber]
     getAllSubscriber = do
+      -- do
       -- a <- liftIO . execRedisIO $ R.get "hari" 
       -- liftIO $ print a
       liftIO $ withResource conns $ \conn ->
@@ -178,7 +178,7 @@ serverP conns=
           \ subabout, \
           \ subname   \
           \ LIMIT 200 "
-    
+
     updateSubscriber :: Subscriber -> Handler String
     updateSubscriber subscriber = do
       liftIO . withResource conns $ \conn ->
@@ -389,7 +389,7 @@ serverP conns=
       expiries <- liftIO $ withResource conns $ \conn ->
         query conn "\
         \    SELECT         \
-        \     subId,        \                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+        \     subId,        \
         \     subStartVol,  \
         \     subSubscriptionType, \
         \     subSlipNum,   \
@@ -470,7 +470,7 @@ serverP conns=
           \     subEndVol     \    
           \    FROM input_dynamic_subscribers \
           \    ORDER BY \
-          \      levenshtein_less_equal(subname,(select * from _name), 1,0,1,7) asc \
+          \      levenshtein_less_equal (subname,(select * from _name), 1,0,1,7) asc \
           \    LIMIT 1000 \
           \    ), \
           \  _res2 as (  \
@@ -487,7 +487,7 @@ serverP conns=
           \    SELECT * from _res3 \
           \      ORDER BY  \
           \        (select min(levenshtein_less_equal(name,(select * from _fname),2,1,1,7)) from unnest(string_to_array(_res3.subname, ' ')) as name), \
-          \         levenshtein _less_equal(_res3.subname,(select * from _name), 1,0,1,7) asc \
+          \         levenshtein_less_equal(_res3.subname,(select * from _name), 1,0,1,7) asc \
           \       LIMIT ? ) \
           \  SELECT * from _res4"
         (sqSubName sq, sqLimit sq)

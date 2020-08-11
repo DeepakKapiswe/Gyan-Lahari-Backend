@@ -34,7 +34,8 @@ type ProtectedAPI =
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] Subscriber
   :<|> 
-    Get '[JSON] [Subscriber]
+    "getAllSubscribers"
+      :> Get '[JSON] [Subscriber]
   :<|>
     "updateSubscriber"
       :> ReqBody '[JSON] Subscriber
