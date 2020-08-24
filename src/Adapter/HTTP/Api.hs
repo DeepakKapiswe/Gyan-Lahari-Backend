@@ -43,7 +43,7 @@ type ProtectedAPI =
   :<|> 
     "addDistributor"
       :> ReqBody '[JSON] Distributor
-      :> Post '[JSON] String
+      :> Post '[JSON] Distributor
   :<|> 
     "getDistributor"
       :> ReqBody '[JSON] DistributorId
