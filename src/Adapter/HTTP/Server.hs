@@ -59,7 +59,8 @@ checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
    mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
    case mApplyCookies of
      Nothing           -> do
-       liftIO $ print "Yeah I'm in nothing branch"
+       liftIO $ print "Yeah I'm in nothing branch" 
+ 
        throwError err401
      Just applyCookies -> do
        liftIO $ print "Yeah I'm in  apply Cookies Success branch" 
@@ -143,10 +144,9 @@ serverP conns=
         , subDistId  subscriber
         , show <$> subEndVol  subscriber ]
       return $ head res
-
+        
     getAllSubscriber :: Handler [Subscriber]
     getAllSubscriber = do
-      -- do
       -- a <- liftIO . execRedisIO $ R.get "hari" 
       -- liftIO $ print a
       liftIO $ withResource conns $ \conn ->
@@ -178,7 +178,7 @@ serverP conns=
           \ subabout, \
           \ subname   \
           \ LIMIT 200 "
-
+    
     updateSubscriber :: Subscriber -> Handler String
     updateSubscriber subscriber = do
       liftIO . withResource conns $ \conn ->
@@ -220,23 +220,30 @@ serverP conns=
         , subId      subscriber ]
       return "Data Updated on Database"
     
-    postDistributor :: Distributor -> Handler String
+    postDistributor :: Distributor -> Handler Distributor
     postDistributor distributor = do
-      liftIO . withResource conns $ \conn ->
-        execute conn
+      res <- liftIO . withResource conns $ \conn ->
+        query conn
           "INSERT INTO input_static_distributors( \    
            \ distId,    \
            \ distName,  \
            \ distAdd,   \
            \ distCity,  \
            \ distPhone  \
-           \ ) VALUES (?,?,?,?,?)"
+           \ ) VALUES (?,?,?,?,?) \
+           \ RETURNING \
+           \ distId,    \
+           \ distName,  \
+           \ distAdd,   \
+           \ distCity,  \
+           \ distPhone  "
+
         [ distId distributor
         , distName distributor
         , distAdd distributor
         , distCity distributor
         , distPhone distributor ]
-      return "Data Tried to add on Database"
+      return $ head res 
     
     getDistributor :: DistributorId -> Handler Distributor
     getDistributor distId = do 
@@ -389,7 +396,7 @@ serverP conns=
       expiries <- liftIO $ withResource conns $ \conn ->
         query conn "\
         \    SELECT         \
-        \     subId,        \
+        \     subId,        \                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
         \     subStartVol,  \
         \     subSubscriptionType, \
         \     subSlipNum,   \
@@ -470,7 +477,7 @@ serverP conns=
           \     subEndVol     \    
           \    FROM input_dynamic_subscribers \
           \    ORDER BY \
-          \      levenshtein_less_equal (subname,(select * from _name), 1,0,1,7) asc \
+          \      levenshtein_less_equal(subname,(select * from _name), 1,0,1,7) asc \
           \    LIMIT 1000 \
           \    ), \
           \  _res2 as (  \
@@ -539,7 +546,6 @@ serverP conns=
 
                      
 a = undefined
-
 
 
 bulkDistributionDetailsToList
