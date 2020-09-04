@@ -29,6 +29,7 @@ import Types
 
 import Adapter.HTTP.Servers.Subscriber
 import Adapter.HTTP.Servers.Distributor
+import Adapter.HTTP.Servers.AuthHandler
 
 
 server ::
@@ -41,38 +42,45 @@ server conns cs jwts =
        pSubscriberServer conns
   :<|> pDistributorServer conns
   :<|> protected conns
-  :<|> unprotected cs jwts
+  :<|> authHandler conns cs jwts 
 
 
-unprotected :: CookieSettings -> JWTSettings -> Server UnProtectedAPI
-unprotected = checkCreds
+-- unprotected
+--   :: Pool Connection
+--   -> CookieSettings
+--   -> JWTSettings
+--   -> Server UnProtectedAPI
+-- unprotected = checkCreds
 
--- Here is the login handler
-checkCreds :: CookieSettings
-           -> JWTSettings
-           -> UserAuth
-           -> Handler (Headers '[ Header "Set-Cookie" SetCookie
-                                , Header "Set-Cookie" SetCookie]
-                               User)
-checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
-  -- dummy passwords :) this will come probably from db lookups
-  let userRole = case pass of
-                   "1" -> UAdmin
-                   "2" -> UApprover
-                   "3" -> UManager
-                   "4" -> UDistributor
-                   "5" -> UGuest
-                   _   -> USubscriber
+-- -- Here is the login handler
+-- checkCreds 
+--   :: Pool Connection
+--   -> CookieSettings
+--   -> JWTSettings
+--   -> UserAuth
+--   -> Handler (Headers '[ Header "Set-Cookie" SetCookie
+--                        , Header "Set-Cookie" SetCookie]
+--                         User)
+-- checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
+--   -- dummy passwords :) this will come probably from db lookups
 
-  mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just name) userRole))
-  case mApplyCookies of
-    Nothing           ->
-      throwError err401
-    Just applyCookies ->
-      return $ applyCookies (User (Just name) userRole)
-checkCreds _ _ _ = do
-  liftIO $ print "In Check Cred Error Branch"
-  throwError err401
+--   let userRole = case pass of
+--                    "1" -> UAdmin
+--                    "2" -> UApprover
+--                    "3" -> UManager
+--                    "4" -> UDistributor
+--                    "5" -> UGuest
+--                    _   -> USubscriber
+
+--   mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just name) userRole))
+--   case mApplyCookies of
+--     Nothing           ->
+--       throwError err401
+--     Just applyCookies ->
+--       return $ applyCookies (User (Just name) userRole)
+-- checkCreds _ _ _ = do
+--   liftIO $ print "In Check Cred Error Branch"
+--   throwError err401
 
 protected ::
      Pool Connection 
