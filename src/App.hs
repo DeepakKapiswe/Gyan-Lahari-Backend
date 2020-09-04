@@ -21,7 +21,6 @@ import           Network.Wai.Middleware.AddHeaders (addHeaders)
 
 import           Adapter.HTTP.Api
 import           Adapter.HTTP.Server
-import           Adapter.HTTP.ProxyServer
 import           Adapter.PostgreSQL.UserData
 
 import           Servant.Auth.Server

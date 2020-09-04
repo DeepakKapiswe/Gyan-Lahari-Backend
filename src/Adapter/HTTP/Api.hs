@@ -19,14 +19,28 @@ type AuthCookies = Headers '[ Header "Set-Cookie" SetCookie
                             , Header "Set-Cookie" SetCookie]
 
 type API auths =
-  "api" :> 
-    ((Auth auths UserAuth :> ProtectedAPI)
-    :<|> UnProtectedAPI)
-
+  "api" :>
+    (
+      (Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
+    :<|> 
+      (Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
+    :<|> 
+      (Auth auths (UserAtLeast 'UManager) :> ProtectedAPI)
+    :<|> 
+      UnProtectedAPI
+    )
 
 type UnProtectedAPI = "login"
     :> ReqBody '[JSON] UserAuth
-    :> Verb 'POST 200 '[JSON] (AuthCookies UserAuth)
+    :> Verb 'POST 200 '[JSON] (AuthCookies User)
+
+type SubscriberAPI =
+  "viewSubscriber"
+      :> Get '[JSON] [Subscriber]
+
+type DistributorAPI =
+    "viewDistributor"
+      :> Get '[JSON] [Distributor]
 
 
 type ProtectedAPI =

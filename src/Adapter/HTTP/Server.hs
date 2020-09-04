@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -26,6 +27,9 @@ import Servant.Auth.Server
 import Adapter.HTTP.Api
 import Types
 
+import Adapter.HTTP.Servers.Subscriber
+import Adapter.HTTP.Servers.Distributor
+
 
 server ::
      Pool Connection
@@ -33,20 +37,15 @@ server ::
   -> CookieSettings
   -> JWTSettings
   -> Server (API auths)
-server a cs jwts =
-       protected a
+server conns cs jwts =
+       pSubscriberServer conns
+  :<|> pDistributorServer conns
+  :<|> protected conns
   :<|> unprotected cs jwts
+
 
 unprotected :: CookieSettings -> JWTSettings -> Server UnProtectedAPI
 unprotected = checkCreds
-
-protected ::
-     Pool Connection 
-  -- -> R.Connection 
-  -> AuthResult UserAuth
-  -> Server ProtectedAPI
-protected a (Authenticated user) = serverP a
-protected _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 -- Here is the login handler
 checkCreds :: CookieSettings
@@ -54,24 +53,39 @@ checkCreds :: CookieSettings
            -> UserAuth
            -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                 , Header "Set-Cookie" SetCookie]
-                               UserAuth)
+                               User)
 checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
-   mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings usr
-   case mApplyCookies of
-     Nothing           -> do
-       liftIO $ print "Yeah I'm in nothing branch" 
- 
-       throwError err401
-     Just applyCookies -> do
-       liftIO $ print "Yeah I'm in  apply Cookies Success branch" 
-       liftIO $ print usr 
-       return $ applyCookies usr   
+  -- dummy passwords :) this will come probably from db lookups
+  let userRole = case pass of
+                   "1" -> UAdmin
+                   "2" -> UApprover
+                   "3" -> UManager
+                   "4" -> UDistributor
+                   "5" -> UGuest
+                   _   -> USubscriber
+
+  mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just name) userRole))
+  case mApplyCookies of
+    Nothing           ->
+      throwError err401
+    Just applyCookies ->
+      return $ applyCookies (User (Just name) userRole)
 checkCreds _ _ _ = do
   liftIO $ print "In Check Cred Error Branch"
   throwError err401
 
+protected ::
+     Pool Connection 
+  -- -> R.Connection 
+  -> AuthResult (UserAtLeast 'UManager)
+  -- -> AuthResult (AllowedUserRoles '[UManager, UApprover, UAdmin])
+  -> Server ProtectedAPI
+protected a (Authenticated user) = serverP a
+protected _ x = throwAll err401 { errBody = BL.pack $ show x }
+
+
 serverP :: Pool Connection -> Server ProtectedAPI
-serverP conns=
+serverP conns =
   postSubscriber       :<|> 
   getAllSubscriber     :<|> 
   updateSubscriber     :<|>
@@ -146,9 +160,7 @@ serverP conns=
       return $ head res
         
     getAllSubscriber :: Handler [Subscriber]
-    getAllSubscriber = do
-      -- a <- liftIO . execRedisIO $ R.get "hari" 
-      -- liftIO $ print a
+    getAllSubscriber =
       liftIO $ withResource conns $ \conn ->
         query_ conn "SELECT    \
         \ subId,               \
@@ -178,6 +190,8 @@ serverP conns=
           \ subabout, \
           \ subname   \
           \ LIMIT 200 "
+    
+
     
     updateSubscriber :: Subscriber -> Handler String
     updateSubscriber subscriber = do
