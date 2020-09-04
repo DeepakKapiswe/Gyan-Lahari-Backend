@@ -1,5 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE KindSignatures  #-}
+{-# LANGUAGE DataKinds  #-}
+{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 
 module Types where
     
@@ -7,6 +12,8 @@ import Data.Aeson
 import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 import Servant.Auth.Server
+import Data.Proxy
+import Data.Text
 
 data Subscriber = Subscriber {
     subId        :: Maybe String
@@ -121,3 +128,103 @@ instance FromJSON UserAuth
 instance ToJSON UserAuth
 instance FromJWT UserAuth
 instance ToJWT UserAuth
+
+data UserRole =
+    UGuest
+  | USubscriber
+  | UDistributor
+  | UManager
+  | UApprover
+  | UAdmin
+  deriving (Eq, Show, Ord, Generic)
+
+instance FromJSON UserRole
+instance ToJSON UserRole
+
+class KnownUserRole (r :: UserRole) where
+  knownUserRole :: Proxy r -> UserRole
+
+instance KnownUserRole 'UGuest where
+  knownUserRole _ = UGuest
+
+instance KnownUserRole 'USubscriber where
+  knownUserRole _ = USubscriber
+
+instance KnownUserRole 'UDistributor where
+  knownUserRole _ = UDistributor
+
+instance KnownUserRole 'UManager where
+  knownUserRole _ = UManager
+
+instance KnownUserRole 'UApprover where
+  knownUserRole _ = UApprover
+
+instance KnownUserRole 'UAdmin where
+  knownUserRole _ = UAdmin
+
+data User = 
+  User {
+    uId   :: Maybe String,
+    uType :: UserRole
+    }
+  deriving (Eq, Show, Generic)
+
+instance FromJSON User
+instance ToJSON User
+instance FromJWT User
+instance ToJWT User
+
+newtype UserAtLeast (r :: UserRole) = UAL User
+  deriving (Eq, Show, Generic)
+
+userAtLeast :: forall (r :: UserRole). KnownUserRole r => User -> Maybe (UserAtLeast r)
+userAtLeast usr
+  | minUserRole <= uType usr = Just (UAL usr)
+  | otherwise = Nothing
+  where minUserRole = knownUserRole (Proxy :: Proxy r)
+
+instance FromJSON (UserAtLeast a)
+instance ToJSON (UserAtLeast a)
+
+class KnownUserRoles (rs :: [UserRole]) where
+  knownUserRoles :: Proxy rs -> [UserRole]
+
+instance KnownUserRoles '[] where
+  knownUserRoles _ = []
+
+instance (KnownUserRole r, KnownUserRoles rs) => KnownUserRoles ( r ': rs) where
+  knownUserRoles _ = (knownUserRole (Proxy :: Proxy r)) : (knownUserRoles (Proxy :: Proxy rs))
+
+
+newtype AllowedUserRoles (ur :: [UserRole]) = AllowedUser User
+  deriving (Eq, Show, Generic)
+
+isAllowedUserRole :: forall (uRoles :: [UserRole]). KnownUserRoles uRoles => User -> Maybe (AllowedUserRoles uRoles)
+isAllowedUserRole usr
+  | elem (uType usr) allowedUserRoles = Just (AllowedUser usr)
+  | otherwise = Nothing
+  where allowedUserRoles = knownUserRoles (Proxy :: Proxy uRoles)
+
+instance FromJSON (AllowedUserRoles a)
+instance ToJSON (AllowedUserRoles a)
+
+instance ToJWT (AllowedUserRoles a)
+instance KnownUserRoles uRoles => FromJWT (AllowedUserRoles uRoles) where
+  decodeJWT val = case (decodeJWT val :: Either Text User) of 
+    Left x -> Left x
+    Right usr -> case (isAllowedUserRole usr :: Maybe (AllowedUserRoles uRoles)) of
+      Nothing -> Left $ pack "Not Enough Permission"
+      Just u -> Right u
+
+instance ToJWT (UserAtLeast a)
+instance KnownUserRole a => FromJWT (UserAtLeast a) where
+  decodeJWT val = case (decodeJWT val :: Either Text User) of 
+    Left x -> Left x
+    Right usr -> case (userAtLeast usr :: Maybe (UserAtLeast a)) of
+      Nothing -> Left $ pack "Not Enough Permission"
+      Just u -> Right u
+
+newtype SubId = SubId String
+  deriving (Eq, Show, Generic)
+
+
