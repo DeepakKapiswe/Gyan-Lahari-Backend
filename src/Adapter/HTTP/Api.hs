@@ -24,7 +24,7 @@ type API auths =
       (Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
     :<|> 
       (Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
-    :<|> 
+    :<|>
       (Auth auths (UserAtLeast 'UManager) :> ProtectedAPI)
     :<|> 
       UnProtectedAPI
@@ -35,7 +35,7 @@ type UnProtectedAPI = "login"
     :> Verb 'POST 200 '[JSON] (AuthCookies User)
 
 type SubscriberAPI =
-  "viewSubscriber"
+    "viewSubscriber"
       :> Get '[JSON] [Subscriber]
 
 type DistributorAPI =
@@ -97,9 +97,3 @@ type ProtectedAPI =
     "recentlyAddedSubscribers"
       :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
-  :<|>
-    "checkUserAuth"
-      :> ReqBody '[JSON] UserAuth
-      :> Post '[JSON] Bool
-
-

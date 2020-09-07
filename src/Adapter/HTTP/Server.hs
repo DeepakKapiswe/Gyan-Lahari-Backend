@@ -45,48 +45,10 @@ server conns cs jwts =
   :<|> authHandler conns cs jwts 
 
 
--- unprotected
---   :: Pool Connection
---   -> CookieSettings
---   -> JWTSettings
---   -> Server UnProtectedAPI
--- unprotected = checkCreds
-
--- -- Here is the login handler
--- checkCreds 
---   :: Pool Connection
---   -> CookieSettings
---   -> JWTSettings
---   -> UserAuth
---   -> Handler (Headers '[ Header "Set-Cookie" SetCookie
---                        , Header "Set-Cookie" SetCookie]
---                         User)
--- checkCreds cookieSettings jwtSettings usr@(UserAuth name pass) = do
---   -- dummy passwords :) this will come probably from db lookups
-
---   let userRole = case pass of
---                    "1" -> UAdmin
---                    "2" -> UApprover
---                    "3" -> UManager
---                    "4" -> UDistributor
---                    "5" -> UGuest
---                    _   -> USubscriber
-
---   mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just name) userRole))
---   case mApplyCookies of
---     Nothing           ->
---       throwError err401
---     Just applyCookies ->
---       return $ applyCookies (User (Just name) userRole)
--- checkCreds _ _ _ = do
---   liftIO $ print "In Check Cred Error Branch"
---   throwError err401
-
 protected ::
      Pool Connection 
   -- -> R.Connection 
   -> AuthResult (UserAtLeast 'UManager)
-  -- -> AuthResult (AllowedUserRoles '[UManager, UApprover, UAdmin])
   -> Server ProtectedAPI
 protected a (Authenticated user) = serverP a
 protected _ x = throwAll err401 { errBody = BL.pack $ show x }
@@ -94,21 +56,20 @@ protected _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 serverP :: Pool Connection -> Server ProtectedAPI
 serverP conns =
-  postSubscriber       :<|> 
-  getAllSubscriber     :<|> 
-  updateSubscriber     :<|>
-  postDistributor      :<|>
-  getDistributor       :<|>
-  getAllDistributor    :<|>
-  updateDistributor    :<|>
-  distSubscribers      :<|>
-  distributionList     :<|>
-  bulkDistributionList :<|>
-  expiryList           :<|>
-  bulkExpiryList       :<|>
-  searchSubscriber     :<|>
-  recentlyAddedSubscribers :<|>
-  checkUserAuth
+  postSubscriber           :<|> 
+  getAllSubscriber         :<|> 
+  updateSubscriber         :<|>
+  postDistributor          :<|>
+  getDistributor           :<|>
+  getAllDistributor        :<|>
+  updateDistributor        :<|>
+  distSubscribers          :<|>
+  distributionList         :<|>
+  bulkDistributionList     :<|>
+  expiryList               :<|>
+  bulkExpiryList           :<|>
+  searchSubscriber         :<|>
+  recentlyAddedSubscribers 
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
@@ -546,22 +507,6 @@ serverP conns =
         \ LIMIT ?"
         [show count]
     
-    checkUserAuth :: UserAuth -> Handler Bool
-    checkUserAuth (UserAuth ui pass) = do
-      (res::[UserAuth]) <- liftIO $ withResource conns $ \conn ->
-        query conn "SELECT \
-        \ userId, \
-        \ userPassword \
-        \ FROM userLogin \
-        \ WHERE \
-        \   userId = ? \
-        \    AND \
-        \   userPassword = ?"
-          [ ui, pass]
-      -- liftIO . execRedisIO $ do
-      --   bs <- liftIO $ nextRandom
-      --   R.set "hari" (U.toASCIIBytes bs)
-      return (res /= [])
 
     -- execRedisIO :: R.Redis a -> IO a
     -- execRedisIO a = R.runRedis redConn a

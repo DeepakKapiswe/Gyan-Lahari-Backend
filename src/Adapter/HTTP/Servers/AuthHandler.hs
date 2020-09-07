@@ -42,30 +42,45 @@ authHandler conns cookieSettings jwtSettings = checkCreds
       -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                            , Header "Set-Cookie" SetCookie]
                             User)
-    checkCreds usr@(UserAuth name pass) = do
+    checkCreds usr@(UserAuth name pass muserType) = do
+      let (queryStr, queryParams) =
+            case muserType of 
+              Just "Subscriber"  -> ("SELECT \
+                                    \ subId         \
+                                    \ FROM input_dynamic_subscribers \
+                                      \ WHERE \
+                                     \ subPhone = ? \
+                                      \ LIMIT 1", [name])
+              Just "Distributor" -> ("SELECT \
+                                    \ distId         \
+                                    \ FROM input_static_distributors \
+                                      \ WHERE \
+                                     \ distPhone = ? \
+                                      \ LIMIT 1", [name])
+              -- Anything for now, later it could have more details
+              _                  -> ("SELECT \            
+                                    \ userRole  \
+                                    \ FROM userlogin \
+                                      \ WHERE \
+                                     \ userId = ? \
+                                      \ AND \
+                                     \ userpassword = ? \
+                                      \ LIMIT 1", [name, pass])
+
       (uName :: [Only String]) <- liftIO $ withResource conns $ \conn ->
-                  query conn "SELECT \
-                    \ userId         \
-                    \ FROM userlogin \
-                      \ WHERE \
-                     \ userId = ? \
-                      \ AND \
-                     \ userpassword = ? \
-                      \ LIMIT 1"
-                    [name, pass]
-      
-      let userRole | length uName == 0 = UGuest
-                   | otherwise =  case length name of
-                        11 -> UAdmin
-                        2  -> UApprover
-                        7  -> UManager
-                        4  -> UDistributor
-                        _  -> USubscriber
+                  query conn queryStr queryParams
+      let dbReturnVal = fromOnly . head $ uName
+      let (userRole, usrId) | length uName == 0 = (UGuest, "")
+                            | otherwise =  case muserType of
+                                 Just  "Subscriber"  -> (USubscriber, dbReturnVal)
+                                 Just  "Distributor" -> (UDistributor, dbReturnVal)
+                                 _ -> (read dbReturnVal, "")
+          
 
     
-      mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just name) userRole))
+      mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just usrId) userRole))
       case mApplyCookies of
         Nothing           ->
           throwError err401
         Just applyCookies ->
-          return $ applyCookies (User (Just "AEDX") userRole)
+          return $ applyCookies (User (Just usrId) userRole)

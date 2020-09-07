@@ -120,14 +120,13 @@ instance FromJSON SearchQuery
 instance ToJSON SearchQuery
 
 data UserAuth = UserAuth {
-    userId   :: String
-  , password :: String
+    userId   :: Maybe String
+  , password :: Maybe String
+  , userRole :: Maybe String
 } deriving (Show, Eq, Generic, FromRow, ToRow)
 
 instance FromJSON UserAuth
 instance ToJSON UserAuth
-instance FromJWT UserAuth
-instance ToJWT UserAuth
 
 data UserRole =
     UGuest
@@ -136,7 +135,7 @@ data UserRole =
   | UManager
   | UApprover
   | UAdmin
-  deriving (Eq, Show, Ord, Generic)
+  deriving (Eq, Show, Read, Ord, Generic)
 
 instance FromJSON UserRole
 instance ToJSON UserRole
@@ -226,5 +225,3 @@ instance KnownUserRole a => FromJWT (UserAtLeast a) where
 
 newtype SubId = SubId String
   deriving (Eq, Show, Generic)
-
-
