@@ -48,7 +48,7 @@ server conns cs jwts =
 protected ::
      Pool Connection 
   -- -> R.Connection 
-  -> AuthResult (UserAtLeast 'UManager)
+  -> AuthResult (AllowedUserRoles '[UManager, UApprover, UAdmin])
   -> Server ProtectedAPI
 protected a (Authenticated user) = serverP a
 protected _ x = throwAll err401 { errBody = BL.pack $ show x }

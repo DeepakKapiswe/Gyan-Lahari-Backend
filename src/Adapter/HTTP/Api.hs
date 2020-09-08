@@ -25,7 +25,7 @@ type API auths =
     :<|> 
       (Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
     :<|>
-      (Auth auths (UserAtLeast 'UManager) :> ProtectedAPI)
+      (Auth auths (AllowedUserRoles '[UManager, UApprover, UAdmin]) :> ProtectedAPI)
     :<|> 
       UnProtectedAPI
     )

@@ -173,18 +173,6 @@ instance ToJSON User
 instance FromJWT User
 instance ToJWT User
 
-newtype UserAtLeast (r :: UserRole) = UAL User
-  deriving (Eq, Show, Generic)
-
-userAtLeast :: forall (r :: UserRole). KnownUserRole r => User -> Maybe (UserAtLeast r)
-userAtLeast usr
-  | minUserRole <= uType usr = Just (UAL usr)
-  | otherwise = Nothing
-  where minUserRole = knownUserRole (Proxy :: Proxy r)
-
-instance FromJSON (UserAtLeast a)
-instance ToJSON (UserAtLeast a)
-
 class KnownUserRoles (rs :: [UserRole]) where
   knownUserRoles :: Proxy rs -> [UserRole]
 
@@ -212,14 +200,6 @@ instance KnownUserRoles uRoles => FromJWT (AllowedUserRoles uRoles) where
   decodeJWT val = case (decodeJWT val :: Either Text User) of 
     Left x -> Left x
     Right usr -> case (isAllowedUserRole usr :: Maybe (AllowedUserRoles uRoles)) of
-      Nothing -> Left $ pack "Not Enough Permission"
-      Just u -> Right u
-
-instance ToJWT (UserAtLeast a)
-instance KnownUserRole a => FromJWT (UserAtLeast a) where
-  decodeJWT val = case (decodeJWT val :: Either Text User) of 
-    Left x -> Left x
-    Right usr -> case (userAtLeast usr :: Maybe (UserAtLeast a)) of
       Nothing -> Left $ pack "Not Enough Permission"
       Just u -> Right u
 

@@ -76,9 +76,7 @@ authHandler conns cookieSettings jwtSettings = checkCreds
                                  Just  "Distributor" -> (UDistributor, dbReturnVal)
                                  _ -> (read dbReturnVal, "")
           
-
-    
-      mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (UAL (User (Just usrId) userRole))
+      mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (AllowedUser (User (Just usrId) userRole))
       case mApplyCookies of
         Nothing           ->
           throwError err401
