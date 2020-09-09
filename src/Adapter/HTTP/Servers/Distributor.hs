@@ -44,7 +44,8 @@ distributorServer conns usr =
   :<|> distributionList
   :<|> expiryList
   :<|> searchSubscriber
-  :<|> recentlyAddedSubscribers 
+  :<|> recentlyAddedSubscribers
+  :<|> getAllSubscriber
 
 
   where
@@ -224,6 +225,7 @@ distributorServer conns usr =
           \  SELECT * from _res4"
           (sqSubName sq, fromJust $ uId usr, sqLimit sq)
     
+    -- TODO : The logic of Recently Added Subscribers has to be changed
     recentlyAddedSubscribers :: Int -> Handler [Subscriber]
     recentlyAddedSubscribers count = liftIO $
       withResource conns $ \conn ->
@@ -249,3 +251,36 @@ distributorServer conns usr =
         \ ORDER BY subId DESC \
         \ LIMIT ?"
         [ fromJust $ uId usr, show count]
+    
+    getAllSubscriber :: Handler [Subscriber]
+    getAllSubscriber =
+      liftIO $ withResource conns $ \conn ->
+        query conn "SELECT    \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId,    \
+        \ subEndVol     \
+        \ FROM input_dynamic_subscribers \
+        \   WHERE subDistId = ? \
+        \ ORDER BY \
+          \ substate, \
+          \ subcity,  \
+          \ subpost,  \
+          \ subpincode, \
+          \ subadd2,  \
+          \ subadd1,  \
+          \ subabout, \
+          \ subname"
+        [uId usr]  

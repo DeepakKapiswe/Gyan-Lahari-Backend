@@ -57,6 +57,9 @@ type DistributorAPI =
     "recentlyAddedSubscribers"
       :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "getAllSubscribers"
+      :> Get '[JSON] [Subscriber]
 
 
 type ProtectedAPI =
