@@ -23,7 +23,7 @@ type API auths =
     (
       (Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
     :<|> 
-      (Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
+      ("dist" :> Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
     :<|>
       (Auth auths (AllowedUserRoles '[UManager, UApprover, UAdmin]) :> ProtectedAPI)
     :<|> 
@@ -39,16 +39,24 @@ type SubscriberAPI =
       :> Get '[JSON] [Subscriber]
 
 type DistributorAPI =
-    "distViewDistributor"
+    "viewDistributor"
       :> Get '[JSON] [Distributor]
   :<|>
-    "distDistributionList"
+    "distributionList"
       :> ReqBody '[JSON] DistributionListDetails
       :> Post '[JSON] DistributionList
   :<|>
-    "distExpiryList"
+    "expiryList"
       :> ReqBody '[JSON] ExpiryListDetails
       :> Post '[JSON] ExpiryList
+  :<|>
+    "searchSubscriber"
+      :> ReqBody '[JSON] SearchQuery
+      :> Post '[JSON] [Subscriber]
+  :<|>
+    "recentlyAddedSubscribers"
+      :> ReqBody '[JSON] Int
+      :> Post '[JSON] [Subscriber]
 
 
 type ProtectedAPI =
