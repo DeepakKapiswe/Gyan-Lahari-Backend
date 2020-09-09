@@ -39,8 +39,16 @@ type SubscriberAPI =
       :> Get '[JSON] [Subscriber]
 
 type DistributorAPI =
-    "viewDistributor"
+    "distViewDistributor"
       :> Get '[JSON] [Distributor]
+  :<|>
+    "distDistributionList"
+      :> ReqBody '[JSON] DistributionListDetails
+      :> Post '[JSON] DistributionList
+  :<|>
+    "distExpiryList"
+      :> ReqBody '[JSON] ExpiryListDetails
+      :> Post '[JSON] ExpiryList
 
 
 type ProtectedAPI =
