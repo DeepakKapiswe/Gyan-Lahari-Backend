@@ -30,9 +30,14 @@ type API auths =
       UnProtectedAPI
     )
 
-type UnProtectedAPI = "login"
-    :> ReqBody '[JSON] UserAuth
-    :> Verb 'POST 200 '[JSON] (AuthCookies User)
+type UnProtectedAPI =
+    "login"
+      :> ReqBody '[JSON] UserAuth
+      :> Verb 'POST 200 '[JSON] (AuthCookies User)
+  :<|>
+    "distLogin"
+      :> ReqBody '[JSON] UserAuth
+      :> Verb 'POST 200 '[JSON] (AuthCookies Distributor)
 
 type SubscriberAPI =
     "viewSubscriber"
