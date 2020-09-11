@@ -43,7 +43,7 @@ type UnProtectedAPI =
   :<|>
     "distLogin"
       :> ReqBody '[JSON] UserAuth
-      :> Verb 'POST 200 '[JSON] (AuthCookies Distributor)
+      :> Verb 'POST 200 '[JSON] (AuthCookies (Maybe Distributor))
 
 type SubscriberAPI =
     "viewSubscriber"

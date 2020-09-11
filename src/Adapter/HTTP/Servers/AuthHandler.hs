@@ -87,19 +87,10 @@ authHandler conns cookieSettings jwtSettings =
       :: UserAuth
       -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                            , Header "Set-Cookie" SetCookie]
-                            Distributor)
+                             (Maybe Distributor))
     distCheckCreds usr@(UserAuth name pass muserType) =
       case muserType of 
         Just "Distributor" -> do
-          -- (uName :: [Only String]) <- liftIO $ withResource conns $ \conn ->
-          --           query conn 
-          --             "SELECT  \
-          --               \ distId \
-          --             \ FROM input_static_distributors \
-          --               \ WHERE \
-          --             \ distPhone = ? \
-          --             \ LIMIT 1"
-          --             [name]
           res <- liftIO $ withResource conns $ \conn ->
             query conn "SELECT  \
               \ distId,    \
@@ -111,16 +102,14 @@ authHandler conns cookieSettings jwtSettings =
               \ WHERE   \
                 \ distPhone  = ? "
               [name]
-
-          let dbReturnVal = head $ res
-          let (userRole, usrId) | length res == 0 = (UGuest, "")
-                                | otherwise = (UDistributor, fromJust $ distId dbReturnVal)
-              
-          mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (AllowedUser (User (Just usrId) userRole))
-          case mApplyCookies of
-            Nothing           ->
-              throwError err401
-            Just applyCookies ->
-              return $ applyCookies dbReturnVal
+          
+          case res of
+            [] -> throwError err401
+            distDetails :_ -> do
+              let usrId = fromJust $ distId distDetails
+              mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings (AllowedUser (User (Just usrId) UDistributor))
+              case mApplyCookies of
+                Nothing           -> throwError err401
+                Just applyCookies -> return $ applyCookies (pure distDetails)
         
         _                  -> throwError err401
