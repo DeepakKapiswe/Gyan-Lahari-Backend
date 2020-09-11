@@ -137,6 +137,8 @@ data UserRole =
   | UAdmin
   deriving (Eq, Show, Read, Ord, Generic)
 
+type AllUsers = '[UGuest, USubscriber, UDistributor, UManager, UApprover, UAdmin]
+
 instance FromJSON UserRole
 instance ToJSON UserRole
 

@@ -27,8 +27,14 @@ type API auths =
     :<|>
       (Auth auths (AllowedUserRoles '[UManager, UApprover, UAdmin]) :> ProtectedAPI)
     :<|> 
+      (Auth auths (AllowedUserRoles AllUsers) :> LogoutAPI)
+    :<|> 
       UnProtectedAPI
     )
+
+type LogoutAPI =
+    "logout"
+      :> Get '[JSON] (AuthCookies String)
 
 type UnProtectedAPI =
     "login"

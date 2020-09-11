@@ -42,8 +42,16 @@ server conns cs jwts =
        pSubscriberServer conns
   :<|> pDistributorServer conns
   :<|> protected conns
+  :<|> logout cs
   :<|> authHandler conns cs jwts 
 
+
+logout ::
+     CookieSettings
+  -> AuthResult (AllowedUserRoles AllUsers)
+  -> Server LogoutAPI
+logout cs _ = return $ clearSession cs "Logged Out"
+  
 
 protected ::
      Pool Connection 
