@@ -26,6 +26,8 @@ import Servant.Auth.Server
 
 import Adapter.HTTP.Api
 import Types
+import Adapter.HTTP.Handlers.FilterSubscribers
+    ( filterSubscribers )
 
 
 pDistributorServer ::
@@ -46,6 +48,7 @@ distributorServer conns usr =
   :<|> searchSubscriber
   :<|> recentlyAddedSubscribers
   :<|> getAllSubscriber
+  :<|> distFilterSubscribers
 
 
   where
@@ -283,4 +286,10 @@ distributorServer conns usr =
           \ subadd1,  \
           \ subabout, \
           \ subname"
-        [uId usr]  
+        [uId usr]
+    
+    distFilterSubscribers :: FilterOptions -> Handler [Subscriber]
+    distFilterSubscribers fo = filterSubscribers conns fo'
+      where
+        fo' = fo {foSubDistId = pure <$> uId usr }
+
