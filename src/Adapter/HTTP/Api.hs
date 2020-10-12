@@ -71,6 +71,10 @@ type DistributorAPI =
   :<|>
     "getAllSubscribers"
       :> Get '[JSON] [Subscriber]
+  :<|>
+    "filterSubscribers"
+      :> ReqBody '[JSON] FilterOptions
+      :> Post '[JSON] [Subscriber]
 
 
 type ProtectedAPI =
