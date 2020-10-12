@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds  #-}
 {-# LANGUAGE TypeOperators  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 
 module Types where
@@ -13,12 +14,13 @@ import Database.PostgreSQL.Simple (FromRow, ToRow)
 import GHC.Generics (Generic)
 import Servant.Auth.Server
 import Data.Proxy
-import Data.Text
+import Data.Text (Text, pack)
+import Data.Data
 
 data Subscriber = Subscriber {
     subId        :: Maybe String
   , subStartVol  :: Maybe Int
-  , subSubscriptionType  :: Maybe Int
+  , subSubscriptionType :: Maybe Int
   , subSlipNum   :: Maybe Int
   , subName      :: Maybe String
   , subAbout     :: Maybe String
@@ -118,6 +120,28 @@ data SearchQuery = SearchQuery {
 
 instance FromJSON SearchQuery
 instance ToJSON SearchQuery
+
+data FilterOptions = FilterOptions {
+    foSubId        :: Maybe [ String ]
+  , foSubStartVol  :: Maybe [ Int ]
+  , foSubSubscriptionType :: Maybe [ Int ]
+  , foSubSlipNum   :: Maybe [ Int ]
+  , foSubName      :: Maybe [ String ]
+  , foSubAbout     :: Maybe [ String ]
+  , foSubAdd1      :: Maybe [ String ]
+  , foSubAdd2      :: Maybe [ String ]
+  , foSubPost      :: Maybe [ String ]
+  , foSubCity      :: Maybe [ String ]
+  , foSubState     :: Maybe [ String ]
+  , foSubPincode   :: Maybe [ String ]
+  , foSubPhone     :: Maybe [ String ]
+  , foSubRemark    :: Maybe [ String ]
+  , foSubDistId    :: Maybe [ String ]
+  , foSubEndVol    :: Maybe [ Int ]
+} deriving (Show, Eq, Generic, Data, Typeable)
+
+instance FromJSON FilterOptions
+instance ToJSON FilterOptions
 
 data UserAuth = UserAuth {
     userId   :: Maybe String

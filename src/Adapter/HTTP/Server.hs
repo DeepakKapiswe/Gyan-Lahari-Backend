@@ -16,9 +16,6 @@ import Database.PostgreSQL.Simple
 import Servant
 import Data.Maybe
 
-import qualified Data.UUID as U
-import Data.UUID.V4
--- import qualified Database.Redis as R
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 
@@ -30,6 +27,8 @@ import Types
 import Adapter.HTTP.Servers.Subscriber
 import Adapter.HTTP.Servers.Distributor
 import Adapter.HTTP.Servers.AuthHandler
+import Adapter.HTTP.Handlers.FilterSubscribers
+    ( filterSubscribers )
 
 
 server ::
@@ -77,7 +76,8 @@ serverP conns =
   expiryList               :<|>
   bulkExpiryList           :<|>
   searchSubscriber         :<|>
-  recentlyAddedSubscribers 
+  recentlyAddedSubscribers :<|>
+  filterSubscribers conns
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do

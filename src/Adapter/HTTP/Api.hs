@@ -127,3 +127,7 @@ type ProtectedAPI =
     "recentlyAddedSubscribers"
       :> ReqBody '[JSON] Int
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "filterSubscribers"
+      :> ReqBody '[JSON] FilterOptions
+      :> Post '[JSON] [Subscriber]
