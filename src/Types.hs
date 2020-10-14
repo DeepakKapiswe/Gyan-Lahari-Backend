@@ -11,6 +11,7 @@ module Types where
     
 import Data.Aeson
 import Database.PostgreSQL.Simple (FromRow, ToRow)
+import Database.PostgreSQL.Simple.FromRow
 import GHC.Generics (Generic)
 import Servant.Auth.Server
 import Data.Proxy
@@ -142,6 +143,17 @@ data FilterOptions = FilterOptions {
 
 instance FromJSON FilterOptions
 instance ToJSON FilterOptions
+
+data SubscriberApplication = SubscriberApplication {
+    saApplicationId  :: Maybe Int
+  , saSubscriberData :: Subscriber
+} deriving (Show, Eq, Generic)
+
+instance FromJSON SubscriberApplication
+instance ToJSON   SubscriberApplication
+
+instance FromRow SubscriberApplication where
+  fromRow = SubscriberApplication <$> field <*> fromRow
 
 data UserAuth = UserAuth {
     userId   :: Maybe String
