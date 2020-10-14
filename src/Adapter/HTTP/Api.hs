@@ -135,3 +135,7 @@ type ProtectedAPI =
     "filterSubscribers"
       :> ReqBody '[JSON] FilterOptions
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "applyForNewSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] SubscriberApplication
