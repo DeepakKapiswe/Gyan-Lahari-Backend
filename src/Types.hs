@@ -146,6 +146,8 @@ instance ToJSON FilterOptions
 
 data SubscriberApplication = SubscriberApplication {
     saApplicationId  :: Maybe Int
+  , saAppStatus      :: Maybe String
+  , saProcessedBy    :: Maybe String
   , saSubscriberData :: Subscriber
 } deriving (Show, Eq, Generic)
 
@@ -153,7 +155,29 @@ instance FromJSON SubscriberApplication
 instance ToJSON   SubscriberApplication
 
 instance FromRow SubscriberApplication where
-  fromRow = SubscriberApplication <$> field <*> fromRow
+  fromRow = SubscriberApplication <$> 
+    field <*>
+    field <*>
+    field <*> 
+    fromRow
+
+
+data ApprovalRequest = ApprovalRequest {
+    arApplicationIds :: Maybe [Int]
+  , arProcessedBy :: Maybe String 
+} deriving (Show, Eq, Generic)
+
+instance FromJSON ApprovalRequest
+instance ToJSON   ApprovalRequest
+
+data ApprovalResponse = ApprovalResponse {
+    arApplication :: SubscriberApplication
+  , arSubscriber  :: Subscriber
+} deriving (Show, Eq, Generic)
+
+instance FromJSON ApprovalResponse
+instance ToJSON   ApprovalResponse
+
 
 data UserAuth = UserAuth {
     userId   :: Maybe String

@@ -27,19 +27,20 @@ import Types
 import Adapter.HTTP.Servers.Subscriber
 import Adapter.HTTP.Servers.Distributor
 import Adapter.HTTP.Servers.AuthHandler
+import Adapter.HTTP.Servers.Approver (pApproverServer)
 import Adapter.HTTP.Handlers.FilterSubscribers
     ( filterSubscribers )
 
 
 server ::
      Pool Connection
-  -- -> R.Connection
   -> CookieSettings
   -> JWTSettings
   -> Server (API auths)
 server conns cs jwts =
        pSubscriberServer conns
   :<|> pDistributorServer conns
+  :<|> pApproverServer conns
   :<|> protected conns
   :<|> logout cs
   :<|> authHandler conns cs jwts 
@@ -63,13 +64,9 @@ protected _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 serverP :: Pool Connection -> Server ProtectedAPI
 serverP conns =
-  postSubscriber           :<|> 
   getAllSubscriber         :<|> 
-  updateSubscriber         :<|>
-  postDistributor          :<|>
   getDistributor           :<|>
   getAllDistributor        :<|>
-  updateDistributor        :<|>
   distSubscribers          :<|>
   distributionList         :<|>
   bulkDistributionList     :<|>
@@ -78,7 +75,8 @@ serverP conns =
   searchSubscriber         :<|>
   recentlyAddedSubscribers :<|>
   filterSubscribers conns  :<|>
-  applyForNewSubscriber
+  applyForNewSubscriber    :<|>
+  getAllSubscriberApplications 
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
@@ -538,7 +536,9 @@ serverP conns =
         \ subDistId,    \
         \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
         \ RETURNING \
-        \  subAppId, \
+      \  subAppId, \
+      \  appStatus, \
+      \  processedBy, \
         \  subId,       \
         \  subStartVol, \
         \  subSubscriptionType, \
@@ -573,6 +573,68 @@ serverP conns =
         , subDistId  subscriber
         , show <$> subEndVol  subscriber ]
       return $ head res
+    
+    getAllSubscriberApplications :: Handler [SubscriberApplication]
+    getAllSubscriberApplications = liftIO $ 
+      withResource conns $ \conn ->
+        query_ conn "SELECT     \
+        \  subAppId, \
+        \  appStatus, \
+        \  processedBy, \
+          \  subId,       \
+          \  subStartVol, \
+          \  subSubscriptionType, \
+          \  subSlipNum,   \
+          \  subName,      \
+          \  subAbout,     \
+          \  subAdd1,      \
+          \  subAdd2,      \
+          \  subPost,      \
+          \  subCity,      \
+          \  subState,     \
+          \  subPincode,   \
+          \  subPhone,     \
+          \  subRemark,    \
+          \  subDistId,    \
+          \  subEndVol     \
+          \ FROM input_dynamic_subscriber_applications \
+          \ ORDER BY subAppId DESC"
+    
+    approveSubscriberApplication :: ApprovalRequest -> Handler SubscriberApplication
+    approveSubscriberApplication appReq = do
+      subApps <- liftIO . withResource conns $ \conn ->
+        query conn
+          "UPDATE input_dynamic_subscriber_applications \
+            \ SET \
+              \ appStatus = \'Approved\', \
+              \ processedBy = ? \
+            \ WHERE \
+              \ (appStatus = \'Pending\') \
+                \ AND \
+              \ (subAppId in ?)  \
+            \ RETURNING \
+              \  subAppId, \
+              \  appStatus, \
+              \  processedBy, \
+              \  subId,       \
+              \  subStartVol, \
+              \  subSubscriptionType, \
+              \  subSlipNum,   \
+              \  subName,      \
+              \  subAbout,     \
+              \  subAdd1,      \
+              \  subAdd2,      \
+              \  subPost,      \
+              \  subCity,      \
+              \  subState,     \
+              \  subPincode,   \
+              \  subPhone,     \
+              \  subRemark,    \
+              \  subDistId,    \
+              \  subEndVol "
+          ( arProcessedBy appReq
+          , (In . fmap show) <$> arApplicationIds appReq)
+      return . head $ subApps
     
 
     -- execRedisIO :: R.Redis a -> IO a

@@ -1,7 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Adapter.HTTP.Api where
 
@@ -24,6 +22,8 @@ type API auths =
       (Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
     :<|> 
       ("dist" :> Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
+    :<|>
+      (Auth auths (AllowedUserRoles '[UApprover, UAdmin]) :> ApproverAPI)
     :<|>
       (Auth auths (AllowedUserRoles '[UManager, UApprover, UAdmin]) :> ProtectedAPI)
     :<|> 
@@ -76,33 +76,38 @@ type DistributorAPI =
       :> ReqBody '[JSON] FilterOptions
       :> Post '[JSON] [Subscriber]
 
-
-type ProtectedAPI =
+type ApproverAPI = 
     "addUser"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] Subscriber
-  :<|> 
-    "getAllSubscribers"
-      :> Get '[JSON] [Subscriber]
   :<|>
     "updateSubscriber"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] String
-  :<|> 
+  :<|>
     "addDistributor"
       :> ReqBody '[JSON] Distributor
       :> Post '[JSON] Distributor
-  :<|> 
+  :<|>
+    "updateDistributor"
+      :> ReqBody '[JSON] Distributor
+      :> Post '[JSON] String
+  :<|>
+    "approveSubscriberApplication"
+      :> ReqBody '[JSON] ApprovalRequest
+      :> Post '[JSON] SubscriberApplication
+
+
+type ProtectedAPI =
+    "getAllSubscribers"
+      :> Get '[JSON] [Subscriber]
+  :<|>  
     "getDistributor"
       :> ReqBody '[JSON] DistributorId
       :> Post '[JSON] Distributor
   :<|>
     "getAllDistributor"
       :> Get '[JSON] [Distributor]
-  :<|>
-    "updateDistributor"
-      :> ReqBody '[JSON] Distributor
-      :> Post '[JSON] String
   :<|>
     "distSubscribers"
       :> ReqBody '[JSON] Distributor
@@ -139,3 +144,6 @@ type ProtectedAPI =
     "applyForNewSubscriber"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] SubscriberApplication
+  :<|> 
+    "getAllSubscriberApplications"
+      :> Get '[JSON] [SubscriberApplication]
