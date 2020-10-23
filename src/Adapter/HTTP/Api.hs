@@ -75,6 +75,13 @@ type DistributorAPI =
     "filterSubscribers"
       :> ReqBody '[JSON] FilterOptions
       :> Post '[JSON] [Subscriber]
+  :<|>
+    "applyForNewSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] SubscriberApplication
+  :<|> 
+    "getAllSubscriberApplications"
+      :> Get '[JSON] [SubscriberApplication]
 
 type ApproverAPI = 
     "addUser"
@@ -94,6 +101,10 @@ type ApproverAPI =
       :> Post '[JSON] String
   :<|>
     "approveSubscriberApplication"
+      :> ReqBody '[JSON] ApprovalRequest
+      :> Post '[JSON] SubscriberApplication
+  :<|>
+    "rejectSubscriberApplication"
       :> ReqBody '[JSON] ApprovalRequest
       :> Post '[JSON] SubscriberApplication
 

@@ -49,6 +49,8 @@ distributorServer conns usr =
   :<|> recentlyAddedSubscribers
   :<|> getAllSubscriber
   :<|> distFilterSubscribers
+  :<|> applyForNewSubscriber
+  :<|> getAllSubscriberApplications
 
 
   where
@@ -292,4 +294,129 @@ distributorServer conns usr =
     distFilterSubscribers fo = filterSubscribers conns fo'
       where
         fo' = fo {foSubDistId = pure <$> uId usr }
+    
+    applyForNewSubscriber :: Subscriber -> Handler SubscriberApplication
+    applyForNewSubscriber subscriber = do
+      res <- liftIO . withResource conns $ \conn -> 
+       query conn
+        "INSERT INTO input_dynamic_subscriber_applications( \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId,    \
+        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+        \ RETURNING \
+      \  subAppId, \
+      \  appStatus, \
+      \  processedBy, \
+        \  subId,       \
+        \  subStartVol, \
+        \  subSubscriptionType, \
+        \  subSlipNum,   \
+        \  subName,      \
+        \  subAbout,     \
+        \  subAdd1,      \
+        \  subAdd2,      \
+        \  subPost,      \
+        \  subCity,      \
+        \  subState,     \
+        \  subPincode,   \
+        \  subPhone,     \
+        \  subRemark,    \
+        \  subDistId,    \
+        \  subEndVol"
+
+        [ pure "ZZZZ"
+        , show <$> subStartVol subscriber
+        , show <$> subSubscriptionType subscriber
+        , show <$> subSlipNum subscriber
+        , subName    subscriber
+        , subAbout   subscriber
+        , subAdd1    subscriber
+        , subAdd2    subscriber
+        , subPost    subscriber
+        , subCity    subscriber
+        , subState   subscriber
+        , subPincode subscriber
+        , subPhone   subscriber
+        , subRemark  subscriber
+        , uId        usr
+        , show <$> subEndVol  subscriber ]
+      return $ head res
+  
+
+    getAllSubscriberApplications :: Handler [SubscriberApplication]
+    getAllSubscriberApplications = liftIO $ 
+      withResource conns $ \conn ->
+        query conn "SELECT     \
+        \  subAppId, \
+        \  appStatus, \
+        \  processedBy, \
+          \  subId,       \
+          \  subStartVol, \
+          \  subSubscriptionType, \
+          \  subSlipNum,   \
+          \  subName,      \
+          \  subAbout,     \
+          \  subAdd1,      \
+          \  subAdd2,      \
+          \  subPost,      \
+          \  subCity,      \
+          \  subState,     \
+          \  subPincode,   \
+          \  subPhone,     \
+          \  subRemark,    \
+          \  subDistId,    \
+          \  subEndVol     \
+          \ FROM input_dynamic_subscriber_applications \
+          \   WHERE subDistId = ? \
+          \ ORDER BY subAppId DESC"
+        [uId usr]
+    
+    approveSubscriberApplication :: ApprovalRequest -> Handler SubscriberApplication
+    approveSubscriberApplication appReq = do
+      subApps <- liftIO . withResource conns $ \conn ->
+        query conn
+          "UPDATE input_dynamic_subscriber_applications \
+            \ SET \
+              \ appStatus = \'Approved\', \
+              \ processedBy = ? \
+            \ WHERE \
+              \ (appStatus = \'Pending\') \
+                \ AND \
+              \ (subAppId in ?)  \
+            \ RETURNING \
+              \  subAppId, \
+              \  appStatus, \
+              \  processedBy, \
+              \  subId,       \
+              \  subStartVol, \
+              \  subSubscriptionType, \
+              \  subSlipNum,   \
+              \  subName,      \
+              \  subAbout,     \
+              \  subAdd1,      \
+              \  subAdd2,      \
+              \  subPost,      \
+              \  subCity,      \
+              \  subState,     \
+              \  subPincode,   \
+              \  subPhone,     \
+              \  subRemark,    \
+              \  subDistId,    \
+              \  subEndVol "
+          ( arProcessedBy appReq
+          , (In . fmap show) <$> arApplicationIds appReq)
+      return . head $ subApps
 

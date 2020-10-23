@@ -599,43 +599,6 @@ serverP conns =
           \  subEndVol     \
           \ FROM input_dynamic_subscriber_applications \
           \ ORDER BY subAppId DESC"
-    
-    approveSubscriberApplication :: ApprovalRequest -> Handler SubscriberApplication
-    approveSubscriberApplication appReq = do
-      subApps <- liftIO . withResource conns $ \conn ->
-        query conn
-          "UPDATE input_dynamic_subscriber_applications \
-            \ SET \
-              \ appStatus = \'Approved\', \
-              \ processedBy = ? \
-            \ WHERE \
-              \ (appStatus = \'Pending\') \
-                \ AND \
-              \ (subAppId in ?)  \
-            \ RETURNING \
-              \  subAppId, \
-              \  appStatus, \
-              \  processedBy, \
-              \  subId,       \
-              \  subStartVol, \
-              \  subSubscriptionType, \
-              \  subSlipNum,   \
-              \  subName,      \
-              \  subAbout,     \
-              \  subAdd1,      \
-              \  subAdd2,      \
-              \  subPost,      \
-              \  subCity,      \
-              \  subState,     \
-              \  subPincode,   \
-              \  subPhone,     \
-              \  subRemark,    \
-              \  subDistId,    \
-              \  subEndVol "
-          ( arProcessedBy appReq
-          , (In . fmap show) <$> arApplicationIds appReq)
-      return . head $ subApps
-    
 
     -- execRedisIO :: R.Redis a -> IO a
     -- execRedisIO a = R.runRedis redConn a

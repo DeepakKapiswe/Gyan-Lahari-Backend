@@ -39,7 +39,8 @@ approverServer conns usr =
   updateSubscriber         :<|>
   postDistributor          :<|>
   updateDistributor        :<|>
-  approveSubscriberApplication
+  processSubscriberApplication Approved :<|>
+  processSubscriberApplication Rejected 
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
@@ -183,13 +184,13 @@ approverServer conns usr =
         , distId distributor ]
       return "Data Tried to add on Database"
     
-    approveSubscriberApplication :: ApprovalRequest -> Handler SubscriberApplication
-    approveSubscriberApplication appReq = do
+    processSubscriberApplication :: ApplicationState -> ApprovalRequest -> Handler SubscriberApplication
+    processSubscriberApplication appState appReq = do
       subApps <- liftIO . withResource conns $ \conn ->
         query conn
           "UPDATE input_dynamic_subscriber_applications \
             \ SET \
-              \ appStatus = \'Approved\', \
+              \ appStatus = ?, \
               \ processedBy = ? \
             \ WHERE \
               \ (appStatus = \'Pending\') \
@@ -215,6 +216,7 @@ approverServer conns usr =
               \  subRemark,    \
               \  subDistId,    \
               \  subEndVol "
-          ( arProcessedBy appReq
+          ( show appState
+          , arProcessedBy appReq
           , (In . fmap show) <$> arApplicationIds appReq)
       return . head $ subApps
