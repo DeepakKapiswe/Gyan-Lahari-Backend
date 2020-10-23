@@ -161,6 +161,11 @@ instance FromRow SubscriberApplication where
     field <*> 
     fromRow
 
+data ApplicationState = 
+    Pending
+  | Approved
+  | Rejected
+  deriving (Eq, Show)
 
 data ApprovalRequest = ApprovalRequest {
     arApplicationIds :: Maybe [Int]
