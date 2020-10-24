@@ -11,6 +11,7 @@ module Types where
     
 import Data.Aeson
 import Database.PostgreSQL.Simple (FromRow, ToRow)
+import Database.PostgreSQL.Simple.FromRow
 import GHC.Generics (Generic)
 import Servant.Auth.Server
 import Data.Proxy
@@ -142,6 +143,46 @@ data FilterOptions = FilterOptions {
 
 instance FromJSON FilterOptions
 instance ToJSON FilterOptions
+
+data SubscriberApplication = SubscriberApplication {
+    saApplicationId  :: Maybe Int
+  , saAppStatus      :: Maybe String
+  , saProcessedBy    :: Maybe String
+  , saSubscriberData :: Subscriber
+} deriving (Show, Eq, Generic)
+
+instance FromJSON SubscriberApplication
+instance ToJSON   SubscriberApplication
+
+instance FromRow SubscriberApplication where
+  fromRow = SubscriberApplication <$> 
+    field <*>
+    field <*>
+    field <*> 
+    fromRow
+
+data ApplicationState = 
+    Pending
+  | Approved
+  | Rejected
+  deriving (Eq, Show)
+
+data ApprovalRequest = ApprovalRequest {
+    arApplicationIds :: Maybe [Int]
+  , arProcessedBy :: Maybe String 
+} deriving (Show, Eq, Generic)
+
+instance FromJSON ApprovalRequest
+instance ToJSON   ApprovalRequest
+
+data ApprovalResponse = ApprovalResponse {
+    arApplication :: SubscriberApplication
+  , arSubscriber  :: Subscriber
+} deriving (Show, Eq, Generic)
+
+instance FromJSON ApprovalResponse
+instance ToJSON   ApprovalResponse
+
 
 data UserAuth = UserAuth {
     userId   :: Maybe String

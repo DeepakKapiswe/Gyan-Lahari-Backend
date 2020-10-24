@@ -27,19 +27,20 @@ import Types
 import Adapter.HTTP.Servers.Subscriber
 import Adapter.HTTP.Servers.Distributor
 import Adapter.HTTP.Servers.AuthHandler
+import Adapter.HTTP.Servers.Approver (pApproverServer)
 import Adapter.HTTP.Handlers.FilterSubscribers
     ( filterSubscribers )
 
 
 server ::
      Pool Connection
-  -- -> R.Connection
   -> CookieSettings
   -> JWTSettings
   -> Server (API auths)
 server conns cs jwts =
        pSubscriberServer conns
   :<|> pDistributorServer conns
+  :<|> pApproverServer conns
   :<|> protected conns
   :<|> logout cs
   :<|> authHandler conns cs jwts 
@@ -63,13 +64,9 @@ protected _ x = throwAll err401 { errBody = BL.pack $ show x }
 
 serverP :: Pool Connection -> Server ProtectedAPI
 serverP conns =
-  postSubscriber           :<|> 
   getAllSubscriber         :<|> 
-  updateSubscriber         :<|>
-  postDistributor          :<|>
   getDistributor           :<|>
   getAllDistributor        :<|>
-  updateDistributor        :<|>
   distSubscribers          :<|>
   distributionList         :<|>
   bulkDistributionList     :<|>
@@ -77,7 +74,9 @@ serverP conns =
   bulkExpiryList           :<|>
   searchSubscriber         :<|>
   recentlyAddedSubscribers :<|>
-  filterSubscribers conns
+  filterSubscribers conns  :<|>
+  applyForNewSubscriber    :<|>
+  getAllSubscriberApplications 
   where
     postSubscriber :: Subscriber -> Handler Subscriber
     postSubscriber subscriber = do
@@ -514,7 +513,92 @@ serverP conns =
         \ ORDER BY subId DESC \
         \ LIMIT ?"
         [show count]
+  
+    applyForNewSubscriber :: Subscriber -> Handler SubscriberApplication
+    applyForNewSubscriber subscriber = do
+      res <- liftIO . withResource conns $ \conn -> 
+       query conn
+        "INSERT INTO input_dynamic_subscriber_applications( \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId,    \
+        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+        \ RETURNING \
+      \  subAppId, \
+      \  appStatus, \
+      \  processedBy, \
+        \  subId,       \
+        \  subStartVol, \
+        \  subSubscriptionType, \
+        \  subSlipNum,   \
+        \  subName,      \
+        \  subAbout,     \
+        \  subAdd1,      \
+        \  subAdd2,      \
+        \  subPost,      \
+        \  subCity,      \
+        \  subState,     \
+        \  subPincode,   \
+        \  subPhone,     \
+        \  subRemark,    \
+        \  subDistId,    \
+        \  subEndVol"
+
+        [ pure "ZZZZ"
+        , show <$> subStartVol subscriber
+        , show <$> subSubscriptionType subscriber
+        , show <$> subSlipNum subscriber
+        , subName    subscriber
+        , subAbout   subscriber
+        , subAdd1    subscriber
+        , subAdd2    subscriber
+        , subPost    subscriber
+        , subCity    subscriber
+        , subState   subscriber
+        , subPincode subscriber
+        , subPhone   subscriber
+        , subRemark  subscriber
+        , subDistId  subscriber
+        , show <$> subEndVol  subscriber ]
+      return $ head res
     
+    getAllSubscriberApplications :: Handler [SubscriberApplication]
+    getAllSubscriberApplications = liftIO $ 
+      withResource conns $ \conn ->
+        query_ conn "SELECT     \
+        \  subAppId, \
+        \  appStatus, \
+        \  processedBy, \
+          \  subId,       \
+          \  subStartVol, \
+          \  subSubscriptionType, \
+          \  subSlipNum,   \
+          \  subName,      \
+          \  subAbout,     \
+          \  subAdd1,      \
+          \  subAdd2,      \
+          \  subPost,      \
+          \  subCity,      \
+          \  subState,     \
+          \  subPincode,   \
+          \  subPhone,     \
+          \  subRemark,    \
+          \  subDistId,    \
+          \  subEndVol     \
+          \ FROM input_dynamic_subscriber_applications \
+          \ ORDER BY subAppId DESC"
 
     -- execRedisIO :: R.Redis a -> IO a
     -- execRedisIO a = R.runRedis redConn a
