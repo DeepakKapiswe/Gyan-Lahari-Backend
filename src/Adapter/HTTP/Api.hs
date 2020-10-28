@@ -19,7 +19,7 @@ type AuthCookies = Headers '[ Header "Set-Cookie" SetCookie
 type API auths =
   "api" :>
     (
-      (Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
+      ("sub" :> Auth auths (AllowedUserRoles '[USubscriber]) :> SubscriberAPI) 
     :<|> 
       ("dist" :> Auth auths (AllowedUserRoles '[UDistributor]) :> DistributorAPI) 
     :<|>
@@ -48,6 +48,13 @@ type UnProtectedAPI =
 type SubscriberAPI =
     "viewSubscriber"
       :> Get '[JSON] [Subscriber]
+  :<|>
+    "viewAllSubscriberApplications"
+      :> Get '[JSON] [SubscriberApplication]  
+  :<|>
+    "applyForEditSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] SubscriberApplication
 
 type DistributorAPI =
     "viewDistributor"
@@ -75,13 +82,21 @@ type DistributorAPI =
     "filterSubscribers"
       :> ReqBody '[JSON] FilterOptions
       :> Post '[JSON] [Subscriber]
+  :<|> 
+    "getAllSubscriberApplications"
+      :> Get '[JSON] [SubscriberApplication]
   :<|>
     "applyForNewSubscriber"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] SubscriberApplication
-  :<|> 
-    "getAllSubscriberApplications"
-      :> Get '[JSON] [SubscriberApplication]
+  :<|>
+    "applyForUpdateSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] SubscriberApplication
+  :<|>
+    "getSubscriber"
+      :> ReqBody '[JSON] SubId
+      :> Post '[JSON] [Subscriber]
 
 type ApproverAPI = 
     "addUser"
@@ -151,10 +166,18 @@ type ProtectedAPI =
     "filterSubscribers"
       :> ReqBody '[JSON] FilterOptions
       :> Post '[JSON] [Subscriber]
+  :<|> 
+    "getAllSubscriberApplications"
+      :> Get '[JSON] [SubscriberApplication]
   :<|>
     "applyForNewSubscriber"
       :> ReqBody '[JSON] Subscriber
       :> Post '[JSON] SubscriberApplication
-  :<|> 
-    "getAllSubscriberApplications"
-      :> Get '[JSON] [SubscriberApplication]
+  :<|>
+    "applyForUpdateSubscriber"
+      :> ReqBody '[JSON] Subscriber
+      :> Post '[JSON] SubscriberApplication
+  :<|>
+    "getSubscriber"
+      :> ReqBody '[JSON] SubId
+      :> Post '[JSON] [Subscriber]

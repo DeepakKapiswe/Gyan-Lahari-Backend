@@ -28,6 +28,7 @@ import Adapter.HTTP.Api
 import Types
 import Adapter.HTTP.Handlers.FilterSubscribers
     ( filterSubscribers )
+import Adapter.HTTP.Handlers.NewApplication (newApplication)
 
 
 pDistributorServer ::
@@ -49,8 +50,10 @@ distributorServer conns usr =
   :<|> recentlyAddedSubscribers
   :<|> getAllSubscriber
   :<|> distFilterSubscribers
-  :<|> applyForNewSubscriber
   :<|> getAllSubscriberApplications
+  :<|> addNewSubscriber 
+  :<|> editDetails
+  :<|> getSubscriber
 
 
   where
@@ -295,72 +298,12 @@ distributorServer conns usr =
       where
         fo' = fo {foSubDistId = pure <$> uId usr }
     
-    applyForNewSubscriber :: Subscriber -> Handler SubscriberApplication
-    applyForNewSubscriber subscriber = do
-      res <- liftIO . withResource conns $ \conn -> 
-       query conn
-        "INSERT INTO input_dynamic_subscriber_applications( \
-        \ subId,               \
-        \ subStartVol,         \
-        \ subSubscriptionType, \
-        \ subSlipNum,   \
-        \ subName,      \
-        \ subAbout,     \
-        \ subAdd1,      \
-        \ subAdd2,      \
-        \ subPost,      \
-        \ subCity,      \
-        \ subState,     \
-        \ subPincode,   \
-        \ subPhone,     \
-        \ subRemark,    \
-        \ subDistId,    \
-        \ subEndVol     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
-        \ RETURNING \
-      \  subAppId, \
-      \  appStatus, \
-      \  processedBy, \
-        \  subId,       \
-        \  subStartVol, \
-        \  subSubscriptionType, \
-        \  subSlipNum,   \
-        \  subName,      \
-        \  subAbout,     \
-        \  subAdd1,      \
-        \  subAdd2,      \
-        \  subPost,      \
-        \  subCity,      \
-        \  subState,     \
-        \  subPincode,   \
-        \  subPhone,     \
-        \  subRemark,    \
-        \  subDistId,    \
-        \  subEndVol"
-
-        [ pure "ZZZZ"
-        , show <$> subStartVol subscriber
-        , show <$> subSubscriptionType subscriber
-        , show <$> subSlipNum subscriber
-        , subName    subscriber
-        , subAbout   subscriber
-        , subAdd1    subscriber
-        , subAdd2    subscriber
-        , subPost    subscriber
-        , subCity    subscriber
-        , subState   subscriber
-        , subPincode subscriber
-        , subPhone   subscriber
-        , subRemark  subscriber
-        , uId        usr
-        , show <$> subEndVol  subscriber ]
-      return $ head res
-  
-
     getAllSubscriberApplications :: Handler [SubscriberApplication]
     getAllSubscriberApplications = liftIO $ 
       withResource conns $ \conn ->
         query conn "SELECT     \
         \  subAppId, \
+        \  appType,  \
         \  appStatus, \
         \  processedBy, \
           \  subId,       \
@@ -384,39 +327,41 @@ distributorServer conns usr =
           \ ORDER BY subAppId DESC"
         [uId usr]
     
-    approveSubscriberApplication :: ApprovalRequest -> Handler SubscriberApplication
-    approveSubscriberApplication appReq = do
-      subApps <- liftIO . withResource conns $ \conn ->
-        query conn
-          "UPDATE input_dynamic_subscriber_applications \
-            \ SET \
-              \ appStatus = \'Approved\', \
-              \ processedBy = ? \
-            \ WHERE \
-              \ (appStatus = \'Pending\') \
-                \ AND \
-              \ (subAppId in ?)  \
-            \ RETURNING \
-              \  subAppId, \
-              \  appStatus, \
-              \  processedBy, \
-              \  subId,       \
-              \  subStartVol, \
-              \  subSubscriptionType, \
-              \  subSlipNum,   \
-              \  subName,      \
-              \  subAbout,     \
-              \  subAdd1,      \
-              \  subAdd2,      \
-              \  subPost,      \
-              \  subCity,      \
-              \  subState,     \
-              \  subPincode,   \
-              \  subPhone,     \
-              \  subRemark,    \
-              \  subDistId,    \
-              \  subEndVol "
-          ( arProcessedBy appReq
-          , (In . fmap show) <$> arApplicationIds appReq)
-      return . head $ subApps
+    addNewSubscriber :: Subscriber -> Handler SubscriberApplication
+    addNewSubscriber sub = newApplication conns AddNewSubscriber sub'
+      where
+        sub' = sub {subDistId = uId usr}
+    
+    editDetails :: Subscriber -> Handler SubscriberApplication
+    editDetails sub = newApplication conns EditDetails sub'
+      where
+        sub' = sub {subDistId = uId usr}
+    
+    getSubscriber :: SubId -> Handler [Subscriber]
+    getSubscriber subId = 
+      liftIO $ withResource conns $ \conn ->
+        query conn "SELECT     \
+        \ subId,               \
+        \ subStartVol,         \
+        \ subSubscriptionType, \
+        \ subSlipNum,   \
+        \ subName,      \
+        \ subAbout,     \
+        \ subAdd1,      \
+        \ subAdd2,      \
+        \ subPost,      \
+        \ subCity,      \
+        \ subState,     \
+        \ subPincode,   \
+        \ subPhone,     \
+        \ subRemark,    \
+        \ subDistId,    \
+        \ subEndVol     \
+        \ FROM input_dynamic_subscribers \
+         \ WHERE  \
+         \  subId = ? \
+         \ AND \
+           \subDistId = ?"
+        [ pure subId
+        , uId usr ]
 

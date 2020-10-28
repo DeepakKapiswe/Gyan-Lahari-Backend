@@ -186,8 +186,8 @@ approverServer conns usr =
     
     processSubscriberApplication :: ApplicationState -> ApprovalRequest -> Handler SubscriberApplication
     processSubscriberApplication appState appReq = do
-      subApps <- liftIO . withResource conns $ \conn ->
-        query conn
+      liftIO . withResource conns $ \conn ->
+        execute conn
           "UPDATE input_dynamic_subscriber_applications \
             \ SET \
               \ appStatus = ?, \
@@ -195,10 +195,21 @@ approverServer conns usr =
             \ WHERE \
               \ (appStatus = \'Pending\') \
                 \ AND \
-              \ (subAppId in ?)  \
-            \ RETURNING \
-              \  subAppId, \
-              \  appStatus, \
+              \ (subAppId = ?)"
+          ( show appState
+          , arProcessedBy appReq
+          , show <$> arApplicationId appReq)
+      getSubscriberApplication $ arApplicationId appReq
+
+    -- Extra care should be taken
+    -- This function should not be called with an appId not present in DB
+    getSubscriberApplication :: Maybe Int -> Handler SubscriberApplication
+    getSubscriberApplication appId = liftIO $
+      withResource conns $ \conn -> do
+        res <- query conn "SELECT \
+              \  subAppId,    \
+              \  appType,     \
+              \  appStatus,   \
               \  processedBy, \
               \  subId,       \
               \  subStartVol, \
@@ -215,8 +226,9 @@ approverServer conns usr =
               \  subPhone,     \
               \  subRemark,    \
               \  subDistId,    \
-              \  subEndVol "
-          ( show appState
-          , arProcessedBy appReq
-          , (In . fmap show) <$> arApplicationIds appReq)
-      return . head $ subApps
+              \  subEndVol \
+              \ FROM input_dynamic_subscriber_applications \
+              \  WHERE \
+              \  subAppId = ?"
+            [show <$> appId]
+        return $ head res    

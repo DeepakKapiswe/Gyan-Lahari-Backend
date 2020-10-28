@@ -43,6 +43,7 @@ instance ToJSON Subscriber
 
 
 type DistributorId = String
+type SubId = String
 
 data Distributor = Distributor {
     distId    :: Maybe String
@@ -145,10 +146,11 @@ instance FromJSON FilterOptions
 instance ToJSON FilterOptions
 
 data SubscriberApplication = SubscriberApplication {
-    saApplicationId  :: Maybe Int
-  , saAppStatus      :: Maybe String
-  , saProcessedBy    :: Maybe String
-  , saSubscriberData :: Subscriber
+    saApplicationId   :: Maybe Int
+  , saApplicationType :: Maybe String
+  , saAppStatus       :: Maybe String
+  , saProcessedBy     :: Maybe String
+  , saSubscriberData  :: Subscriber
 } deriving (Show, Eq, Generic)
 
 instance FromJSON SubscriberApplication
@@ -158,8 +160,15 @@ instance FromRow SubscriberApplication where
   fromRow = SubscriberApplication <$> 
     field <*>
     field <*>
+    field <*>
     field <*> 
     fromRow
+
+data ApplicationType =
+    AddNewSubscriber
+  | EditDetails
+  | RenewSubscriber
+  deriving (Eq, Show)
 
 data ApplicationState = 
     Pending
@@ -168,7 +177,7 @@ data ApplicationState =
   deriving (Eq, Show)
 
 data ApprovalRequest = ApprovalRequest {
-    arApplicationIds :: Maybe [Int]
+    arApplicationId :: Maybe Int
   , arProcessedBy :: Maybe String 
 } deriving (Show, Eq, Generic)
 
@@ -269,6 +278,3 @@ instance KnownUserRoles uRoles => FromJWT (AllowedUserRoles uRoles) where
     Right usr -> case (isAllowedUserRole usr :: Maybe (AllowedUserRoles uRoles)) of
       Nothing -> Left $ pack "Not Enough Permission"
       Just u -> Right u
-
-newtype SubId = SubId String
-  deriving (Eq, Show, Generic)
