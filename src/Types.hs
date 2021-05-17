@@ -18,6 +18,26 @@ import Data.Proxy
 import Data.Text (Text, pack)
 import Data.Data
 
+data Slot = Slot {
+    slotId :: Maybe Int
+  , day :: Maybe String
+  , slotTime :: Maybe String
+  , bookingStatus :: Maybe String
+  , patientName :: Maybe String
+  , mobile :: Maybe String
+  , city :: Maybe String
+} deriving (Show, Eq, Generic, FromRow)
+
+instance FromJSON Slot
+instance ToJSON Slot
+
+newtype SlotQuery = SlotQuery {
+  sqMobile :: String
+} deriving (Show, Eq, Generic, FromRow)
+
+instance FromJSON SlotQuery
+instance ToJSON SlotQuery
+
 data Subscriber = Subscriber {
     subId        :: Maybe String
   , subStartVol  :: Maybe Int

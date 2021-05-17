@@ -30,6 +30,8 @@ type API auths =
       (Auth auths (AllowedUserRoles AllUsers) :> LogoutAPI)
     :<|> 
       UnProtectedAPI
+    :<|>
+      ("arogyam" :> ArogyamAPI)
     )
 
 type LogoutAPI =
@@ -44,6 +46,24 @@ type UnProtectedAPI =
     "distLogin"
       :> ReqBody '[JSON] UserAuth
       :> Verb 'POST 200 '[JSON] (AuthCookies (Maybe Distributor))
+
+type ArogyamAPI =
+    "getSlots"
+      :> Get '[JSON] [Slot]
+  :<|>
+    "bookSlot"
+      :> ReqBody '[JSON] Slot
+      :> Post '[JSON] [Slot]
+  :<|>
+    "viewBooking"
+      :> ReqBody '[JSON] SlotQuery
+      :> Post '[JSON] [Slot]
+  :<|>
+    "getAllBookings"
+      :> Get '[JSON] [Slot]
+  
+
+  
 
 type SubscriberAPI =
     "viewSubscriber"

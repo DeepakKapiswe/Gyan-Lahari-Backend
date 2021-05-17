@@ -44,7 +44,8 @@ server conns cs jwts =
   :<|> pApproverServer conns
   :<|> protected conns
   :<|> logout cs
-  :<|> authHandler conns cs jwts 
+  :<|> authHandler conns cs jwts
+  :<|> arogyam conns
 
 
 logout ::
@@ -52,7 +53,93 @@ logout ::
   -> AuthResult (AllowedUserRoles AllUsers)
   -> Server LogoutAPI
 logout cs _ = return $ clearSession cs "Logged Out"
-  
+
+arogyam :: Pool Connection -> Server ArogyamAPI
+arogyam conns =
+  getSlots :<|>
+  bookSlot :<|>
+  viewBooking :<|> 
+  getAllBookings
+  where
+    getSlots :: Handler [Slot]
+    getSlots =
+      liftIO $ withResource conns $ \conn ->
+        query_ conn "SELECT     \
+        \ slotId, \ 
+        \ day, \
+        \ slotTime, \
+        \ bookingStatus, \
+        \ patientName, \
+        \ mobile, \
+        \ city\
+        \ From slots \
+        \ Order By slotId Asc"
+
+    bookSlot :: Slot -> Handler [Slot]    
+    bookSlot slot = do
+      -- warning dirty fix for checking 
+      -- should not be run with empty mobile
+      lookupRes <- viewBooking (SlotQuery $ fromJust $ mobile slot)
+      case lookupRes of
+        (x:_) -> return [x,x]
+        [] ->
+          liftIO $ withResource conns $ \conn ->
+            query conn 
+              "UPDATE slots \
+              \ SET \
+              \ bookingStatus = ?, \
+              \ patientName = ?, \
+              \ mobile = ?, \
+              \ city =? \
+                \ WHERE \
+              \ slotId = ? \
+                \ RETURNING \
+                  \ slotId, \ 
+                  \ day, \
+                  \ slotTime, \
+                  \ bookingStatus, \
+                  \ patientName, \
+                  \ mobile, \
+                  \ city"
+              [ pure "Booked"
+              , patientName slot
+              , mobile slot
+              , city slot
+              , show <$> slotId slot]
+              
+
+    viewBooking :: SlotQuery -> Handler [Slot]
+    viewBooking sq = 
+      liftIO $ withResource conns $ \conn ->
+        query conn
+          "SELECT \
+            \ slotId, \ 
+            \ day, \
+            \ slotTime, \
+            \ bookingStatus, \
+            \ patientName, \
+            \ mobile, \
+            \ city \
+          \ From slots\
+          \ WHERE \
+            \ mobile = ?"
+          [sqMobile sq]
+    
+    getAllBookings :: Handler [Slot]
+    getAllBookings =
+      liftIO $ withResource conns $ \conn ->
+        query_ conn "SELECT     \
+        \ slotId, \ 
+        \ day, \
+        \ slotTime, \
+        \ bookingStatus, \
+        \ patientName, \
+        \ mobile, \
+        \ city\
+        \ From slots \
+        \  WHERE \
+        \ bookingStatus = 'Booked' \
+        \ Order By slotId Asc"
 
 protected ::
      Pool Connection 
